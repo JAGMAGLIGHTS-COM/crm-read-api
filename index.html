@@ -6,20 +6,25 @@
     <title>CRM Conversations</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
     <style>
-        /* ====== VARIABLES & RESET ====== */
+        /* ====== VARIABLES ====== */
         :root {
-            --bg: #f8fafc;
-            --text: #1e293b;
-            --text-light: #64748b;
+            --bg-primary: #ffffff;
+            --bg-secondary: #f8fafc;
+            --bg-tertiary: #f1f5f9;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --text-tertiary: #94a3b8;
             --border: #e2e8f0;
             --primary: #3b82f6;
             --primary-light: #dbeafe;
             --primary-dark: #1d4ed8;
             --accent: #10b981;
-            --danger: #ef4444;
             --warning: #f59e0b;
-            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
-            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --danger: #ef4444;
+            --shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            --radius: 8px;
+            --radius-sm: 6px;
         }
 
         * {
@@ -30,39 +35,70 @@
         }
 
         body {
-            background: var(--bg);
-            color: var(--text);
+            background: var(--bg-secondary);
+            color: var(--text-primary);
             font-size: 14px;
             line-height: 1.5;
             height: 100vh;
             overflow: hidden;
         }
 
-        /* ====== MAIN LAYOUT ====== */
+        /* ====== APP LAYOUT ====== */
         .app {
             display: flex;
             height: 100vh;
             position: relative;
         }
 
+        /* ====== MOBILE HEADER ====== */
+        .mobile-header {
+            display: none;
+            padding: 12px 16px;
+            background: var(--bg-primary);
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .mobile-header h1 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .mobile-menu-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--text-primary);
+            cursor: pointer;
+            padding: 4px;
+        }
+
         /* ====== SIDEBAR ====== */
         .sidebar {
-            width: 380px;
-            background: white;
+            width: 360px;
+            background: var(--bg-primary);
             border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
-            z-index: 50;
+            overflow: hidden;
             transition: transform 0.3s ease;
+        }
+
+        .sidebar.hidden {
+            transform: translateX(-100%);
         }
 
         .sidebar-header {
             padding: 20px;
             border-bottom: 1px solid var(--border);
-            background: white;
+            background: var(--bg-primary);
         }
 
-        .sidebar-header h1 {
+        .sidebar-title {
             font-size: 18px;
             font-weight: 600;
             margin-bottom: 16px;
@@ -71,11 +107,11 @@
             gap: 10px;
         }
 
-        .sidebar-header h1 i {
+        .sidebar-title i {
             color: var(--primary);
         }
 
-        /* Search */
+        /* Search Bar */
         .search-container {
             position: relative;
             margin-bottom: 16px;
@@ -86,16 +122,16 @@
             left: 12px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--text-light);
+            color: var(--text-tertiary);
         }
 
         #searchInput {
             width: 100%;
             padding: 10px 10px 10px 40px;
             border: 1px solid var(--border);
-            border-radius: 8px;
+            border-radius: var(--radius-sm);
             font-size: 14px;
-            background: var(--bg);
+            background: var(--bg-secondary);
             transition: all 0.2s;
         }
 
@@ -114,13 +150,13 @@
         }
 
         .filter-btn {
-            background: var(--bg);
+            background: var(--bg-secondary);
             border: 1px solid var(--border);
             padding: 6px 12px;
             border-radius: 20px;
             font-size: 12px;
             font-weight: 500;
-            color: var(--text-light);
+            color: var(--text-secondary);
             cursor: pointer;
             white-space: nowrap;
             transition: all 0.2s;
@@ -130,7 +166,6 @@
         }
 
         .filter-btn:hover {
-            background: white;
             border-color: var(--primary);
         }
 
@@ -140,33 +175,63 @@
             border-color: var(--primary);
         }
 
-        /* Pinned Section */
-        .section-header {
-            padding: 12px 20px;
-            background: #f8fafc;
-            border-bottom: 1px solid var(--border);
-            font-size: 12px;
-            font-weight: 600;
-            color: var(--text-light);
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+        /* Lead Funnel */
+        .lead-funnel {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 6px;
+            margin: 16px 0;
+            padding: 12px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
         }
 
-        .section-header i {
-            color: var(--warning);
+        .funnel-stage {
+            text-align: center;
+            padding: 6px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-primary);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .funnel-stage:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .stage-label {
+            font-size: 11px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: var(--text-secondary);
+        }
+
+        .stage-count {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-primary);
         }
 
         /* User List */
         .user-list {
             flex: 1;
             overflow-y: auto;
-            background: white;
+            background: var(--bg-primary);
         }
 
-        .user {
+        .date-separator {
+            padding: 8px 20px;
+            background: var(--bg-tertiary);
+            font-size: 11px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .user-item {
             padding: 16px 20px;
             border-bottom: 1px solid var(--border);
             cursor: pointer;
@@ -174,20 +239,20 @@
             position: relative;
         }
 
-        .user:hover {
-            background: #f8fafc;
+        .user-item:hover {
+            background: var(--bg-tertiary);
         }
 
-        .user.active {
+        .user-item.active {
             background: var(--primary-light);
             border-left: 4px solid var(--primary);
         }
 
-        .user.pinned {
+        .user-item.pinned {
             background: #fff8e1;
         }
 
-        .user.pinned::before {
+        .user-item.pinned::before {
             content: '';
             position: absolute;
             left: 0;
@@ -207,7 +272,7 @@
         .user-id {
             font-weight: 600;
             font-size: 14px;
-            color: var(--text);
+            color: var(--text-primary);
         }
 
         .user-meta {
@@ -216,9 +281,9 @@
             gap: 8px;
         }
 
-        .time {
+        .time-ago {
             font-size: 11px;
-            color: var(--text-light);
+            color: var(--text-tertiary);
         }
 
         .pin-btn {
@@ -227,13 +292,7 @@
             color: var(--warning);
             cursor: pointer;
             font-size: 12px;
-            padding: 2px 6px;
-            border-radius: 4px;
-            transition: background 0.2s;
-        }
-
-        .pin-btn:hover {
-            background: rgba(245, 158, 11, 0.1);
+            padding: 2px;
         }
 
         .user-details {
@@ -244,7 +303,7 @@
             font-size: 12px;
         }
 
-        .channel {
+        .channel-badge {
             background: var(--primary-light);
             color: var(--primary-dark);
             padding: 2px 8px;
@@ -253,12 +312,21 @@
         }
 
         .message-count {
-            color: var(--text-light);
+            color: var(--text-secondary);
+        }
+
+        .lead-stage-badge {
+            font-size: 11px;
+            font-weight: 500;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
         }
 
         .message-preview {
             font-size: 13px;
-            color: var(--text-light);
+            color: var(--text-secondary);
             line-height: 1.4;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -266,45 +334,41 @@
             overflow: hidden;
         }
 
-        /* Date Separator */
-        .date-separator {
-            padding: 8px 20px;
+        /* Empty State */
+        .empty-state {
+            padding: 40px 20px;
             text-align: center;
-            position: relative;
+            color: var(--text-tertiary);
         }
 
-        .date-separator span {
-            background: white;
-            padding: 4px 12px;
-            border-radius: 12px;
-            font-size: 11px;
-            color: var(--text-light);
-            border: 1px solid var(--border);
-            font-weight: 500;
+        .empty-state i {
+            font-size: 32px;
+            margin-bottom: 12px;
+            opacity: 0.5;
         }
 
         /* ====== CHAT AREA ====== */
-        .chat {
+        .chat-area {
             flex: 1;
             display: flex;
             flex-direction: column;
-            background: white;
+            background: var(--bg-primary);
         }
 
-        .chat.hidden {
+        .chat-area.hidden {
             display: none;
         }
 
         .chat-header {
             padding: 16px 20px;
             border-bottom: 1px solid var(--border);
-            background: white;
+            background: var(--bg-primary);
             display: flex;
             align-items: center;
             justify-content: space-between;
             position: sticky;
             top: 0;
-            z-index: 40;
+            z-index: 50;
         }
 
         .chat-header-left {
@@ -318,38 +382,31 @@
             background: none;
             border: none;
             font-size: 18px;
-            color: var(--text);
+            color: var(--text-primary);
             cursor: pointer;
             padding: 4px;
         }
 
-        .chat-user {
+        .chat-user-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .chat-user-name {
             font-weight: 600;
             font-size: 16px;
         }
 
-        .lead-stage {
+        .chat-user-meta {
             display: flex;
             align-items: center;
             gap: 8px;
-        }
-
-        .stage-select {
-            padding: 4px 12px;
-            border: 1px solid var(--border);
-            border-radius: 6px;
-            background: white;
-            color: var(--text);
             font-size: 12px;
-            cursor: pointer;
-            outline: none;
+            color: var(--text-secondary);
         }
 
-        .stage-select:focus {
-            border-color: var(--primary);
-        }
-
-        .header-actions {
+        .chat-actions {
             display: flex;
             gap: 8px;
         }
@@ -358,28 +415,59 @@
             width: 32px;
             height: 32px;
             border: 1px solid var(--border);
-            background: white;
+            background: var(--bg-primary);
             border-radius: 6px;
             display: flex;
             align-items: center;
             justify-content: center;
             cursor: pointer;
-            color: var(--text-light);
+            color: var(--text-secondary);
             transition: all 0.2s;
         }
 
         .action-btn:hover {
-            background: var(--bg);
+            background: var(--bg-tertiary);
             border-color: var(--primary);
             color: var(--primary);
         }
 
         /* Messages Container */
-        .messages {
+        .messages-container {
             flex: 1;
-            padding: 20px;
             overflow-y: auto;
-            background: linear-gradient(#f8fafc, #ffffff);
+            padding: 20px;
+            background: linear-gradient(var(--bg-secondary), var(--bg-primary));
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Message Date Separator */
+        .message-date-separator {
+            text-align: center;
+            margin: 20px 0;
+            position: relative;
+        }
+
+        .message-date-separator::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            right: 0;
+            top: 50%;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .message-date-label {
+            background: var(--bg-primary);
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-secondary);
+            border: 1px solid var(--border);
+            position: relative;
+            z-index: 1;
         }
 
         /* Message Bubbles */
@@ -404,7 +492,7 @@
 
         .message-content {
             padding: 12px 16px;
-            border-radius: 12px;
+            border-radius: var(--radius);
             box-shadow: var(--shadow);
             position: relative;
             line-height: 1.5;
@@ -417,23 +505,24 @@
         }
 
         .message.ai .message-content {
-            background: white;
+            background: var(--bg-primary);
             border: 1px solid var(--border);
             border-top-left-radius: 4px;
         }
 
         .message-time {
             font-size: 11px;
-            color: var(--text-light);
-            margin-top: 4px;
+            color: var(--text-tertiary);
+            margin-top: 6px;
             text-align: right;
+            padding: 0 4px;
         }
 
         .message.ai .message-time {
             text-align: left;
         }
 
-        .message-header {
+        .message-metadata {
             display: flex;
             align-items: center;
             gap: 8px;
@@ -443,7 +532,7 @@
 
         .message-role {
             font-weight: 600;
-            color: var(--text-light);
+            color: var(--text-secondary);
         }
 
         .message-channel {
@@ -451,34 +540,37 @@
             font-weight: 500;
         }
 
-        /* Quick Actions */
-        .quick-actions {
+        /* Lead Stage Selector */
+        .lead-stage-selector {
             padding: 12px 20px;
             border-top: 1px solid var(--border);
-            background: white;
+            background: var(--bg-primary);
             display: flex;
             gap: 12px;
         }
 
-        .note-input {
+        .stage-select {
             flex: 1;
-            padding: 10px 12px;
+            padding: 8px 12px;
             border: 1px solid var(--border);
-            border-radius: 6px;
+            border-radius: var(--radius-sm);
+            background: var(--bg-primary);
+            color: var(--text-primary);
             font-size: 14px;
             outline: none;
+            cursor: pointer;
         }
 
-        .note-input:focus {
+        .stage-select:focus {
             border-color: var(--primary);
         }
 
-        .btn-primary {
+        .note-btn {
             background: var(--primary);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 8px 16px;
+            border-radius: var(--radius-sm);
             font-weight: 500;
             cursor: pointer;
             transition: background 0.2s;
@@ -487,26 +579,8 @@
             gap: 6px;
         }
 
-        .btn-primary:hover {
+        .note-btn:hover {
             background: var(--primary-dark);
-        }
-
-        /* Mobile Header */
-        .mobile-header {
-            display: none;
-            padding: 12px 16px;
-            background: white;
-            border-bottom: 1px solid var(--border);
-            align-items: center;
-            justify-content: space-between;
-            position: sticky;
-            top: 0;
-            z-index: 100;
-        }
-
-        .mobile-header h2 {
-            font-size: 16px;
-            font-weight: 600;
         }
 
         /* Scrollbar */
@@ -515,20 +589,24 @@
         }
 
         ::-webkit-scrollbar-track {
-            background: #f1f1f1;
+            background: var(--bg-tertiary);
         }
 
         ::-webkit-scrollbar-thumb {
-            background: #c1c1c1;
+            background: var(--border);
             border-radius: 3px;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-            background: #a8a8a8;
+            background: var(--text-tertiary);
         }
 
         /* ====== RESPONSIVE DESIGN ====== */
         @media (max-width: 768px) {
+            .mobile-header {
+                display: flex;
+            }
+
             .sidebar {
                 position: absolute;
                 top: 0;
@@ -536,45 +614,31 @@
                 bottom: 0;
                 width: 100%;
                 transform: translateX(0);
+                z-index: 1000;
             }
 
             .sidebar.hidden {
                 transform: translateX(-100%);
             }
 
-            .chat {
+            .chat-area {
                 width: 100%;
             }
 
-            .chat.hidden {
+            .chat-area.hidden {
                 display: none;
             }
 
-            .mobile-header {
-                display: flex;
-            }
-
             .back-btn {
-                display: flex;
+                display: block;
             }
 
             .message {
                 max-width: 90%;
             }
 
-            .sidebar-header h1 {
-                font-size: 16px;
-            }
-
-            .filter-btn span {
-                display: none;
-            }
-
-            .filter-btn {
-                padding: 6px;
-                width: 32px;
-                height: 32px;
-                justify-content: center;
+            .lead-funnel {
+                grid-template-columns: repeat(2, 1fr);
             }
         }
 
@@ -587,7 +651,7 @@
                 padding: 12px 16px;
             }
 
-            .messages {
+            .messages-container {
                 padding: 16px;
             }
 
@@ -601,11 +665,11 @@
 
 <!-- Mobile Header -->
 <div class="mobile-header">
-    <button class="back-btn" onclick="toggleSidebar()">
+    <button class="mobile-menu-btn" onclick="toggleSidebar()">
         <i class="fas fa-bars"></i>
     </button>
-    <h2 id="mobileTitle">CRM Conversations</h2>
-    <button class="action-btn" onclick="loadData()" title="Refresh">
+    <h1>CRM Conversations</h1>
+    <button class="mobile-menu-btn" onclick="loadData()" title="Refresh">
         <i class="fas fa-sync-alt"></i>
     </button>
 </div>
@@ -614,7 +678,10 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="sidebar-header">
-            <h1><i class="fas fa-comments"></i> CRM Conversations</h1>
+            <div class="sidebar-title">
+                <i class="fas fa-comments"></i>
+                CRM Conversations
+            </div>
             
             <!-- Search Bar -->
             <div class="search-container">
@@ -641,6 +708,11 @@
                     <span>Web</span>
                 </button>
             </div>
+            
+            <!-- Lead Funnel -->
+            <div class="lead-funnel" id="leadFunnel">
+                <!-- Dynamically populated -->
+            </div>
         </div>
 
         <!-- User List -->
@@ -648,18 +720,18 @@
     </aside>
 
     <!-- CHAT AREA -->
-    <main class="chat hidden">
+    <main class="chat-area hidden">
         <header class="chat-header">
             <div class="chat-header-left">
                 <button class="back-btn" onclick="toggleSidebar()">
                     <i class="fas fa-chevron-left"></i>
                 </button>
-                <div>
-                    <div class="chat-user" id="chatHeader">Select a conversation</div>
-                    <div class="lead-stage" id="leadStage"></div>
+                <div class="chat-user-info">
+                    <div class="chat-user-name" id="chatHeader">Select a conversation</div>
+                    <div class="chat-user-meta" id="leadStageBadge"></div>
                 </div>
             </div>
-            <div class="header-actions">
+            <div class="chat-actions">
                 <button class="action-btn" onclick="togglePin(currentUser)" id="pinBtn" title="Pin conversation">
                     <i class="far fa-thumbtack"></i>
                 </button>
@@ -669,12 +741,13 @@
             </div>
         </header>
 
-        <div id="messages" class="messages"></div>
+        <!-- Messages Container -->
+        <div id="messages" class="messages-container"></div>
         
-        <!-- Quick Actions -->
-        <div class="quick-actions">
+        <!-- Lead Stage Selector -->
+        <div class="lead-stage-selector">
             <select class="stage-select" id="stageSelect" onchange="updateLeadStage(currentUser, this.value)">
-                <option value="">Set lead stage...</option>
+                <option value="">Update lead stage...</option>
                 <option value="new">👋 New Lead</option>
                 <option value="contacted">📞 Contacted</option>
                 <option value="qualified">✅ Qualified</option>
@@ -683,7 +756,7 @@
                 <option value="won">🏆 Won</option>
                 <option value="lost">❌ Lost</option>
             </select>
-            <button class="btn-primary" onclick="markAsWon()">
+            <button class="note-btn" onclick="markAsWon()">
                 <i class="fas fa-trophy"></i>
                 <span>Mark as Won</span>
             </button>
@@ -694,6 +767,7 @@
 <script>
 /* ====== GLOBAL VARIABLES ====== */
 const API_URL = "/api/conversations";
+
 let allMessages = [];
 let currentUser = null;
 let pinnedUsers = new Set();
@@ -702,27 +776,30 @@ let activeFilter = "all";
 let searchQuery = "";
 let sidebarVisible = true;
 
-// Lead stages configuration
+// Lead stages with colors
 const LEAD_STAGES = {
-    new: { label: "👋 New Lead", color: "#64748b" },
-    contacted: { label: "📞 Contacted", color: "#3b82f6" },
-    qualified: { label: "✅ Qualified", color: "#10b981" },
-    proposal: { label: "📄 Proposal", color: "#8b5cf6" },
-    negotiation: { label: "🤝 Negotiation", color: "#f59e0b" },
-    won: { label: "🏆 Won", color: "#059669" },
-    lost: { label: "❌ Lost", color: "#ef4444" }
+    new: { label: "👋 New Lead", color: "#64748b", bg: "#f1f5f9" },
+    contacted: { label: "📞 Contacted", color: "#3b82f6", bg: "#dbeafe" },
+    qualified: { label: "✅ Qualified", color: "#10b981", bg: "#d1fae5" },
+    proposal: { label: "📄 Proposal", color: "#8b5cf6", bg: "#ede9fe" },
+    negotiation: { label: "🤝 Negotiation", color: "#f59e0b", bg: "#fef3c7" },
+    won: { label: "🏆 Won", color: "#059669", bg: "#d1fae5" },
+    lost: { label: "❌ Lost", color: "#ef4444", bg: "#fee2e2" }
 };
 
-/* ====== DATA LOADING ====== */
+/* ====== DATA FUNCTIONS ====== */
 async function loadData() {
     try {
         const res = await fetch(API_URL);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+        
         allMessages = await res.json();
         loadLocalData();
         renderUsers();
+        updateLeadStats();
     } catch (error) {
         console.error("Error loading data:", error);
-        alert("Failed to load conversations. Please try again.");
+        showError("Failed to load conversations. Please check your connection.");
     }
 }
 
@@ -755,18 +832,15 @@ function saveLocalData() {
 /* ====== USER LIST RENDERING ====== */
 function renderUsers() {
     const list = document.getElementById("userList");
+    if (!list) return;
+    
     list.innerHTML = "";
     
-    // Group users by date
+    // Group users by date of last message
     const usersByDate = groupUsersByDate();
     
-    // Show pinned section if there are pinned users
+    // Show pinned users section if any
     if (pinnedUsers.size > 0 && (activeFilter === "all" || activeFilter === "pinned")) {
-        const pinnedHeader = document.createElement("div");
-        pinnedHeader.className = "section-header";
-        pinnedHeader.innerHTML = `<i class="fas fa-thumbtack"></i> Pinned Conversations (${pinnedUsers.size})`;
-        list.appendChild(pinnedHeader);
-        
         [...pinnedUsers].forEach(userId => {
             const userMessages = allMessages.filter(m => m.user_id === userId);
             if (userMessages.length > 0) {
@@ -778,12 +852,12 @@ function renderUsers() {
         });
     }
     
-    // Show regular conversations
+    // Show regular users grouped by date
     Object.keys(usersByDate).forEach(dateGroup => {
         if (usersByDate[dateGroup].length > 0) {
             const dateHeader = document.createElement("div");
             dateHeader.className = "date-separator";
-            dateHeader.innerHTML = `<span>${dateGroup}</span>`;
+            dateHeader.textContent = dateGroup;
             list.appendChild(dateHeader);
             
             usersByDate[dateGroup].forEach(({ userId, lastMsg, messages }) => {
@@ -794,11 +868,15 @@ function renderUsers() {
         }
     });
     
-    // Show empty state
+    // Show empty state if no users
     if (list.children.length === 0) {
         const emptyState = document.createElement("div");
-        emptyState.className = "date-separator";
-        emptyState.innerHTML = `<span>No conversations found</span>`;
+        emptyState.className = "empty-state";
+        emptyState.innerHTML = `
+            <i class="fas fa-comments"></i>
+            <h3>No conversations found</h3>
+            <p>${searchQuery ? 'Try a different search term' : 'No conversations yet'}</p>
+        `;
         list.appendChild(emptyState);
     }
 }
@@ -809,27 +887,29 @@ function renderUserItem(userId, lastMsg, messages, isPinned) {
     const stageConfig = LEAD_STAGES[leadStage];
     
     const userDiv = document.createElement("div");
-    userDiv.className = `user ${isPinned ? "pinned" : ""} ${currentUser === userId ? "active" : ""}`;
+    userDiv.className = `user-item ${isPinned ? 'pinned' : ''} ${currentUser === userId ? 'active' : ''}`;
     
-    const timeAgo = formatTimeAgo(new Date(lastMsg.timestamp));
+    const timeAgo = formatTimeAgo(new Date(lastMsg.created_at || lastMsg.timestamp));
     const messageCount = messages.length;
     
     userDiv.innerHTML = `
         <div class="user-header">
             <div class="user-id">${userId}</div>
             <div class="user-meta">
-                <span class="time">${timeAgo}</span>
+                <span class="time-ago">${timeAgo}</span>
                 <button class="pin-btn" onclick="togglePin('${userId}', event)">
-                    <i class="fas fa-thumbtack"></i>
+                    <i class="${isPinned ? 'fas' : 'far'} fa-thumbtack"></i>
                 </button>
             </div>
         </div>
         <div class="user-details">
-            <span class="channel">${lastMsg.channel}</span>
+            <span class="channel-badge">${lastMsg.channel}</span>
             <span class="message-count">${messageCount} messages</span>
-            <span style="color: ${stageConfig.color}; font-weight: 500;">${stageConfig.label}</span>
+            <span class="lead-stage-badge" style="background: ${stageConfig.bg}; color: ${stageConfig.color}">
+                ${stageConfig.label}
+            </span>
         </div>
-        <div class="message-preview">${truncateText(lastMsg.message, 60)}</div>
+        <div class="message-preview">${truncateText(lastMsg.message, 70)}</div>
     `;
     
     userDiv.onclick = (e) => {
@@ -848,7 +928,7 @@ function groupUsersByDate() {
     users.forEach(userId => {
         const userMessages = allMessages.filter(m => m.user_id === userId);
         const lastMsg = userMessages[userMessages.length - 1];
-        const date = new Date(lastMsg.timestamp);
+        const date = new Date(lastMsg.created_at || lastMsg.timestamp);
         
         let dateLabel;
         const today = new Date();
@@ -859,27 +939,17 @@ function groupUsersByDate() {
             dateLabel = "Today";
         } else if (date.toDateString() === yesterday.toDateString()) {
             dateLabel = "Yesterday";
+        } else if ((today - date) < 7 * 86400000) {
+            dateLabel = date.toLocaleDateString('en-US', { weekday: 'long' });
         } else {
-            dateLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+            dateLabel = date.toLocaleDateString('en-US', { month: 'short', year: 'numeric' });
         }
         
         if (!groups[dateLabel]) groups[dateLabel] = [];
         groups[dateLabel].push({ userId, lastMsg, messages: userMessages });
     });
     
-    // Sort groups chronologically
-    const sortedGroups = {};
-    const order = ['Today', 'Yesterday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    order.forEach(key => {
-        if (groups[key]) sortedGroups[key] = groups[key];
-    });
-    
-    // Add remaining dates
-    Object.keys(groups).forEach(key => {
-        if (!sortedGroups[key]) sortedGroups[key] = groups[key];
-    });
-    
-    return sortedGroups;
+    return groups;
 }
 
 function shouldShowUser(userId, messages) {
@@ -910,22 +980,19 @@ function openChat(userId, element) {
     currentUser = userId;
     
     // Update active state
-    document.querySelectorAll(".user").forEach(u => u.classList.remove("active"));
+    document.querySelectorAll(".user-item").forEach(u => u.classList.remove("active"));
     if (element) element.classList.add("active");
     
     // Update header
     document.getElementById("chatHeader").textContent = userId;
-    document.getElementById("mobileTitle").textContent = userId;
     
-    // Update lead stage UI
+    // Update lead stage badge
     const leadStage = leadStages[userId] || "new";
     const stageConfig = LEAD_STAGES[leadStage];
-    document.getElementById("leadStage").innerHTML = `
-        <select class="stage-select" onchange="updateLeadStage('${userId}', this.value)">
-            ${Object.entries(LEAD_STAGES).map(([key, stage]) => 
-                `<option value="${key}" ${leadStage === key ? 'selected' : ''}>${stage.label}</option>`
-            ).join('')}
-        </select>
+    document.getElementById("leadStageBadge").innerHTML = `
+        <span style="background: ${stageConfig.bg}; color: ${stageConfig.color}; padding: 2px 8px; border-radius: 12px; font-size: 11px;">
+            ${stageConfig.label}
+        </span>
     `;
     
     // Update pin button
@@ -933,72 +1000,108 @@ function openChat(userId, element) {
     pinBtn.innerHTML = pinnedUsers.has(userId) ? '<i class="fas fa-thumbtack"></i>' : '<i class="far fa-thumbtack"></i>';
     pinBtn.title = pinnedUsers.has(userId) ? "Unpin conversation" : "Pin conversation";
     
+    // Update stage select
+    document.getElementById("stageSelect").value = leadStage;
+    
     // Show chat on mobile
     if (window.innerWidth <= 768) {
         document.querySelector(".sidebar").classList.add("hidden");
-        document.querySelector(".chat").classList.remove("hidden");
+        document.querySelector(".chat-area").classList.remove("hidden");
     }
     
     renderMessages();
 }
 
 function renderMessages() {
-    const box = document.getElementById("messages");
-    box.innerHTML = "";
+    const container = document.getElementById("messages");
+    if (!container) return;
     
-    if (!currentUser) return;
+    container.innerHTML = "";
     
-    const userMessages = allMessages.filter(m => m.user_id === currentUser);
+    if (!currentUser) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding: 40px 20px;">
+                <i class="fas fa-comment-slash"></i>
+                <h3>No conversation selected</h3>
+                <p>Select a conversation from the sidebar to view messages</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const userMessages = allMessages
+        .filter(m => m.user_id === currentUser)
+        .sort((a, b) => new Date(a.created_at || a.timestamp) - new Date(b.created_at || b.timestamp));
+    
+    if (userMessages.length === 0) {
+        container.innerHTML = `
+            <div class="empty-state" style="padding: 40px 20px;">
+                <i class="fas fa-comment-slash"></i>
+                <h3>No messages</h3>
+                <p>No messages found for this conversation</p>
+            </div>
+        `;
+        return;
+    }
     
     // Group messages by date
     const messagesByDate = {};
     userMessages.forEach(msg => {
-        const date = new Date(msg.timestamp).toDateString();
+        const date = new Date(msg.created_at || msg.timestamp).toDateString();
         if (!messagesByDate[date]) messagesByDate[date] = [];
         messagesByDate[date].push(msg);
     });
     
-    // Render with date separators
+    // Render messages with date separators
     Object.keys(messagesByDate).forEach(date => {
+        // Add date separator
         const dateSep = document.createElement("div");
-        dateSep.className = "date-separator";
-        dateSep.innerHTML = `<span>${formatDateHeader(date)}</span>`;
-        box.appendChild(dateSep);
+        dateSep.className = "message-date-separator";
+        dateSep.innerHTML = `<span class="message-date-label">${formatDateHeader(date)}</span>`;
+        container.appendChild(dateSep);
         
+        // Add messages for this date
         messagesByDate[date].forEach(msg => {
             const messageDiv = document.createElement("div");
             messageDiv.className = `message ${msg.role}`;
             
-            const time = new Date(msg.timestamp).toLocaleTimeString([], { 
+            const time = new Date(msg.created_at || msg.timestamp).toLocaleTimeString([], { 
                 hour: '2-digit', 
                 minute: '2-digit' 
             });
             
             messageDiv.innerHTML = `
-                <div class="message-header">
-                    <span class="message-role">${msg.role === 'user' ? 'Customer' : 'Assistant'}</span>
-                    <span class="message-channel">${msg.channel}</span>
-                    <span class="message-time">${time}</span>
+                <div class="message-content">
+                    <div class="message-metadata">
+                        <span class="message-role">${msg.role === 'user' ? 'Customer' : 'Assistant'}</span>
+                        <span class="message-channel">${msg.channel}</span>
+                    </div>
+                    <div class="message-text">${msg.message}</div>
                 </div>
-                <div class="message-content">${msg.message}</div>
+                <div class="message-time">${time}</div>
             `;
             
-            box.appendChild(messageDiv);
+            container.appendChild(messageDiv);
         });
     });
     
     // Scroll to bottom
-    box.scrollTop = box.scrollHeight;
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 100);
 }
 
 /* ====== FEATURE FUNCTIONS ====== */
 function togglePin(userId, event) {
     if (event) event.stopPropagation();
+    if (!userId) return;
     
     if (pinnedUsers.has(userId)) {
         pinnedUsers.delete(userId);
+        showToast("Unpinned conversation", "info");
     } else {
         pinnedUsers.add(userId);
+        showToast("Pinned conversation", "success");
     }
     
     saveLocalData();
@@ -1013,8 +1116,55 @@ function togglePin(userId, event) {
 }
 
 function updateLeadStage(userId, stage) {
+    if (!userId) return;
+    
     leadStages[userId] = stage;
     saveLocalData();
+    
+    const stageConfig = LEAD_STAGES[stage];
+    showToast(`Lead stage updated to ${stageConfig.label}`, "success");
+    
+    // Update UI
+    renderUsers();
+    updateLeadStats();
+    
+    // Update header if this is the current chat
+    if (currentUser === userId) {
+        document.getElementById("leadStageBadge").innerHTML = `
+            <span style="background: ${stageConfig.bg}; color: ${stageConfig.color}; padding: 2px 8px; border-radius: 12px; font-size: 11px;">
+                ${stageConfig.label}
+            </span>
+        `;
+    }
+}
+
+function updateLeadStats() {
+    const stats = {};
+    Object.keys(LEAD_STAGES).forEach(stage => {
+        stats[stage] = 0;
+    });
+    
+    const allUserIds = [...new Set(allMessages.map(m => m.user_id))];
+    allUserIds.forEach(userId => {
+        const stage = leadStages[userId] || "new";
+        stats[stage] = (stats[stage] || 0) + 1;
+    });
+    
+    // Update funnel
+    const funnel = document.getElementById("leadFunnel");
+    if (funnel) {
+        funnel.innerHTML = Object.entries(LEAD_STAGES).map(([key, stage]) => `
+            <div class="funnel-stage" onclick="filterByStage('${key}')" style="cursor: pointer;">
+                <div class="stage-label">${stage.label.split(' ')[0]}</div>
+                <div class="stage-count">${stats[key] || 0}</div>
+            </div>
+        `).join('');
+    }
+}
+
+function filterByStage(stage) {
+    activeFilter = stage;
+    document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
     renderUsers();
 }
 
@@ -1023,8 +1173,7 @@ function addNote() {
     
     const note = prompt("Add a note for this lead:");
     if (note) {
-        // In a real implementation, you would save this to your backend
-        alert("Note added (in a real app, this would be saved to your database)");
+        showToast("Note added (would save to database in production)", "success");
     }
 }
 
@@ -1032,26 +1181,10 @@ function markAsWon() {
     if (!currentUser) return;
     
     updateLeadStage(currentUser, "won");
-    alert("Lead marked as won!");
+    showToast("Lead marked as won!", "success");
 }
 
-/* ====== UI UTILITIES ====== */
-function toggleSidebar() {
-    sidebarVisible = !sidebarVisible;
-    const sidebar = document.querySelector(".sidebar");
-    const chat = document.querySelector(".chat");
-    
-    if (window.innerWidth <= 768) {
-        if (sidebarVisible) {
-            sidebar.classList.remove("hidden");
-            chat.classList.add("hidden");
-        } else {
-            sidebar.classList.add("hidden");
-            chat.classList.remove("hidden");
-        }
-    }
-}
-
+/* ====== UTILITY FUNCTIONS ====== */
 function formatTimeAgo(date) {
     const now = new Date();
     const diffMs = now - date;
@@ -1059,11 +1192,11 @@ function formatTimeAgo(date) {
     const diffHours = Math.floor(diffMs / 3600000);
     const diffDays = Math.floor(diffMs / 86400000);
     
-    if (diffMins < 60) return `${diffMins}m ago`;
-    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffMins < 60) return `${diffMins}m`;
+    if (diffHours < 24) return `${diffHours}h`;
     if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays}d ago`;
-    return date.toLocaleDateString();
+    if (diffDays < 7) return `${diffDays}d`;
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
 }
 
 function formatDateHeader(dateStr) {
@@ -1078,7 +1211,62 @@ function formatDateHeader(dateStr) {
 }
 
 function truncateText(text, maxLength) {
+    if (!text) return "";
     return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+}
+
+function showToast(message, type = "info") {
+    // Create toast element
+    const toast = document.createElement("div");
+    toast.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        padding: 12px 16px;
+        background: white;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        z-index: 1000;
+        border-left: 4px solid ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'};
+        animation: slideIn 0.3s ease;
+    `;
+    
+    toast.innerHTML = `
+        <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}" 
+           style="color: ${type === 'success' ? '#10b981' : type === 'error' ? '#ef4444' : '#3b82f6'}"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    // Remove toast after 3 seconds
+    setTimeout(() => {
+        toast.style.animation = "slideOut 0.3s ease";
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
+}
+
+function showError(message) {
+    showToast(message, "error");
+}
+
+function toggleSidebar() {
+    sidebarVisible = !sidebarVisible;
+    const sidebar = document.querySelector(".sidebar");
+    const chatArea = document.querySelector(".chat-area");
+    
+    if (window.innerWidth <= 768) {
+        if (sidebarVisible) {
+            sidebar.classList.remove("hidden");
+            chatArea.classList.add("hidden");
+        } else {
+            sidebar.classList.add("hidden");
+            chatArea.classList.remove("hidden");
+        }
+    }
 }
 
 /* ====== EVENT LISTENERS ====== */
@@ -1094,21 +1282,47 @@ document.addEventListener("DOMContentLoaded", () => {
     });
     
     // Search input
-    document.getElementById("searchInput").addEventListener("input", (e) => {
-        searchQuery = e.target.value;
-        renderUsers();
+    const searchInput = document.getElementById("searchInput");
+    let searchTimeout;
+    searchInput.addEventListener("input", (e) => {
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(() => {
+            searchQuery = e.target.value;
+            renderUsers();
+        }, 300);
     });
     
     // Responsive adjustments
     window.addEventListener("resize", () => {
         if (window.innerWidth > 768) {
             document.querySelector(".sidebar").classList.remove("hidden");
-            document.querySelector(".chat").classList.remove("hidden");
+            document.querySelector(".chat-area").classList.remove("hidden");
         }
     });
     
+    // Add CSS for animations
+    const style = document.createElement("style");
+    style.textContent = `
+        @keyframes slideIn {
+            from { transform: translateX(100%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(100%); opacity: 0; }
+        }
+    `;
+    document.head.appendChild(style);
+    
     // Load initial data
     loadData();
+    
+    // Auto-refresh every 30 seconds
+    setInterval(() => {
+        if (document.visibilityState === "visible") {
+            loadData();
+        }
+    }, 30000);
 });
 </script>
 </body>
