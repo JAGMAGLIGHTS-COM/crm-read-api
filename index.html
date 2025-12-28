@@ -403,7 +403,7 @@
             display: flex;
             flex-direction: column;
             background: var(--bg-primary);
-            min-width: 0; /* Prevent overflow */
+            min-width: 0;
         }
 
         .chat-area.hidden {
@@ -1775,14 +1775,10 @@ function shareCurrentContact() {
 /* ====== DATA FUNCTIONS ====== */
 async function loadData() {
     try {
-        // Simulate API call for demo - replace with actual fetch
-        console.log("Loading data from API...");
+        const res = await fetch(API_URL);
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         
-        // For demo purposes, create sample data
-        if (allMessages.length === 0) {
-            allMessages = generateSampleData();
-        }
-        
+        allMessages = await res.json();
         loadLocalData();
         renderUsers();
         updateStatsPanel();
@@ -1791,33 +1787,6 @@ async function loadData() {
         console.error("Error loading data:", error);
         showToast("Failed to load conversations", "error");
     }
-}
-
-function generateSampleData() {
-    const sampleMessages = [];
-    const users = ["919876543210", "919876543211", "919876543212", "919876543213", "919876543214"];
-    const channels = ["whatsapp", "web"];
-    const roles = ["user", "ai"];
-    
-    for (let i = 0; i < 50; i++) {
-        const userId = users[Math.floor(Math.random() * users.length)];
-        const channel = channels[Math.floor(Math.random() * channels.length)];
-        const role = roles[Math.floor(Math.random() * roles.length)];
-        const daysAgo = Math.floor(Math.random() * 7);
-        const date = new Date();
-        date.setDate(date.getDate() - daysAgo);
-        
-        sampleMessages.push({
-            user_id: userId,
-            channel: channel,
-            role: role,
-            message: `Sample message ${i + 1} from ${role === 'user' ? 'customer' : 'assistant'} via ${channel}`,
-            created_at: date.toISOString(),
-            timestamp: date.getTime()
-        });
-    }
-    
-    return sampleMessages;
 }
 
 function loadLocalData() {
@@ -2175,6 +2144,7 @@ function updateAnalyticsLeadFunnel() {
         stats[stage] = (stats[stage] || 0) + 1;
     });
     
+    // Calculate total
     const total = allUserIds.length;
     
     // Render funnel
@@ -2406,9 +2376,6 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     `;
     document.head.appendChild(style);
-    
-    // Initialize with sample data for demo
-    loadData();
 });
 </script>
 </body>
