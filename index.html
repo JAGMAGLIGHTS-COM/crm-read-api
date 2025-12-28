@@ -1,220 +1,1115 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>CRM Conversations</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>CRM Conversations</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+    <style>
+        /* ====== VARIABLES & RESET ====== */
+        :root {
+            --bg: #f8fafc;
+            --text: #1e293b;
+            --text-light: #64748b;
+            --border: #e2e8f0;
+            --primary: #3b82f6;
+            --primary-light: #dbeafe;
+            --primary-dark: #1d4ed8;
+            --accent: #10b981;
+            --danger: #ef4444;
+            --warning: #f59e0b;
+            --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+        }
 
-<style>
-:root {
-  --bg: #FFFFFB;
-  --text: #252525;
-  --border: #FFC145;
-  --primary: #FFDF00;
-  --accent: #557054;
-  --shadow: 0 6px 20px #E9D7582E;
-}
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
 
-* {
-  box-sizing: border-box;
-  font-family: system-ui, -apple-system, Segoe UI, sans-serif;
-}
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-size: 14px;
+            line-height: 1.5;
+            height: 100vh;
+            overflow: hidden;
+        }
 
-body {
-  margin: 0;
-  background: var(--bg);
-  color: var(--text);
-}
+        /* ====== MAIN LAYOUT ====== */
+        .app {
+            display: flex;
+            height: 100vh;
+            position: relative;
+        }
 
-/* LAYOUT */
-.app {
-  display: flex;
-  height: 100vh;
-}
+        /* ====== SIDEBAR ====== */
+        .sidebar {
+            width: 380px;
+            background: white;
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 50;
+            transition: transform 0.3s ease;
+        }
 
-/* SIDEBAR */
-.sidebar {
-  width: 320px;
-  border-right: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-}
+        .sidebar-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            background: white;
+        }
 
-.sidebar-header {
-  padding: 16px;
-  font-weight: 600;
-  border-bottom: 1px solid var(--border);
-}
+        .sidebar-header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
 
-.user-list {
-  overflow-y: auto;
-}
+        .sidebar-header h1 i {
+            color: var(--primary);
+        }
 
-.user {
-  padding: 14px;
-  cursor: pointer;
-  border-bottom: 1px solid #eee;
-}
+        /* Search */
+        .search-container {
+            position: relative;
+            margin-bottom: 16px;
+        }
 
-.user:hover {
-  background: #FFF8E1;
-}
+        .search-container i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+        }
 
-.user.active {
-  background: #FFF3B0;
-  border-left: 4px solid var(--primary);
-}
+        #searchInput {
+            width: 100%;
+            padding: 10px 10px 10px 40px;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            font-size: 14px;
+            background: var(--bg);
+            transition: all 0.2s;
+        }
 
-.user-id {
-  font-weight: 600;
-}
+        #searchInput:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
 
-.channel {
-  font-size: 12px;
-  opacity: 0.7;
-}
+        /* Filters */
+        .filters {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
 
-/* CHAT */
-.chat {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-}
+        .filter-btn {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-light);
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
 
-.chat-header {
-  padding: 16px;
-  border-bottom: 1px solid var(--border);
-  font-weight: 600;
-}
+        .filter-btn:hover {
+            background: white;
+            border-color: var(--primary);
+        }
 
-.messages {
-  flex: 1;
-  padding: 16px;
-  overflow-y: auto;
-  background: linear-gradient(#FFFFFB, #f6f6f6);
-}
+        .filter-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
 
-/* MESSAGE BUBBLES */
-.message {
-  max-width: 75%;
-  padding: 10px 14px;
-  margin-bottom: 12px;
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  white-space: pre-wrap;
-}
+        /* Pinned Section */
+        .section-header {
+            padding: 12px 20px;
+            background: #f8fafc;
+            border-bottom: 1px solid var(--border);
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-light);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
 
-.message.user {
-  background: #FFFFFF;
-  border: 1px solid var(--border);
-  align-self: flex-start;
-}
+        .section-header i {
+            color: var(--warning);
+        }
 
-.message.ai {
-  background: var(--primary);
-  border: 1px solid var(--accent);
-  align-self: flex-end;
-}
+        /* User List */
+        .user-list {
+            flex: 1;
+            overflow-y: auto;
+            background: white;
+        }
 
-/* MOBILE */
-@media (max-width: 768px) {
-  .sidebar {
-    width: 100%;
-    max-width: 100%;
-  }
+        .user {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            cursor: pointer;
+            transition: background 0.2s;
+            position: relative;
+        }
 
-  .chat {
-    display: none;
-  }
+        .user:hover {
+            background: #f8fafc;
+        }
 
-  .user.active ~ .chat {
-    display: flex;
-  }
-}
-</style>
+        .user.active {
+            background: var(--primary-light);
+            border-left: 4px solid var(--primary);
+        }
+
+        .user.pinned {
+            background: #fff8e1;
+        }
+
+        .user.pinned::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--warning);
+        }
+
+        .user-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 6px;
+        }
+
+        .user-id {
+            font-weight: 600;
+            font-size: 14px;
+            color: var(--text);
+        }
+
+        .user-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .time {
+            font-size: 11px;
+            color: var(--text-light);
+        }
+
+        .pin-btn {
+            background: none;
+            border: none;
+            color: var(--warning);
+            cursor: pointer;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            transition: background 0.2s;
+        }
+
+        .pin-btn:hover {
+            background: rgba(245, 158, 11, 0.1);
+        }
+
+        .user-details {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+        }
+
+        .channel {
+            background: var(--primary-light);
+            color: var(--primary-dark);
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+
+        .message-count {
+            color: var(--text-light);
+        }
+
+        .message-preview {
+            font-size: 13px;
+            color: var(--text-light);
+            line-height: 1.4;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Date Separator */
+        .date-separator {
+            padding: 8px 20px;
+            text-align: center;
+            position: relative;
+        }
+
+        .date-separator span {
+            background: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 11px;
+            color: var(--text-light);
+            border: 1px solid var(--border);
+            font-weight: 500;
+        }
+
+        /* ====== CHAT AREA ====== */
+        .chat {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .chat.hidden {
+            display: none;
+        }
+
+        .chat-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--border);
+            background: white;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 40;
+        }
+
+        .chat-header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .back-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 18px;
+            color: var(--text);
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .chat-user {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .lead-stage {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stage-select {
+            padding: 4px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            background: white;
+            color: var(--text);
+            font-size: 12px;
+            cursor: pointer;
+            outline: none;
+        }
+
+        .stage-select:focus {
+            border-color: var(--primary);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            width: 32px;
+            height: 32px;
+            border: 1px solid var(--border);
+            background: white;
+            border-radius: 6px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            color: var(--text-light);
+            transition: all 0.2s;
+        }
+
+        .action-btn:hover {
+            background: var(--bg);
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        /* Messages Container */
+        .messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            background: linear-gradient(#f8fafc, #ffffff);
+        }
+
+        /* Message Bubbles */
+        .message {
+            max-width: 75%;
+            margin-bottom: 16px;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message.user {
+            margin-left: auto;
+        }
+
+        .message.ai {
+            margin-right: auto;
+        }
+
+        .message-content {
+            padding: 12px 16px;
+            border-radius: 12px;
+            box-shadow: var(--shadow);
+            position: relative;
+            line-height: 1.5;
+        }
+
+        .message.user .message-content {
+            background: var(--primary);
+            color: white;
+            border-top-right-radius: 4px;
+        }
+
+        .message.ai .message-content {
+            background: white;
+            border: 1px solid var(--border);
+            border-top-left-radius: 4px;
+        }
+
+        .message-time {
+            font-size: 11px;
+            color: var(--text-light);
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .message.ai .message-time {
+            text-align: left;
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 4px;
+            font-size: 12px;
+        }
+
+        .message-role {
+            font-weight: 600;
+            color: var(--text-light);
+        }
+
+        .message-channel {
+            color: var(--primary);
+            font-weight: 500;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            padding: 12px 20px;
+            border-top: 1px solid var(--border);
+            background: white;
+            display: flex;
+            gap: 12px;
+        }
+
+        .note-input {
+            flex: 1;
+            padding: 10px 12px;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .note-input:focus {
+            border-color: var(--primary);
+        }
+
+        .btn-primary {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        /* Mobile Header */
+        .mobile-header {
+            display: none;
+            padding: 12px 16px;
+            background: white;
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .mobile-header h2 {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        /* ====== RESPONSIVE DESIGN ====== */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: absolute;
+                top: 0;
+                left: 0;
+                bottom: 0;
+                width: 100%;
+                transform: translateX(0);
+            }
+
+            .sidebar.hidden {
+                transform: translateX(-100%);
+            }
+
+            .chat {
+                width: 100%;
+            }
+
+            .chat.hidden {
+                display: none;
+            }
+
+            .mobile-header {
+                display: flex;
+            }
+
+            .back-btn {
+                display: flex;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .sidebar-header h1 {
+                font-size: 16px;
+            }
+
+            .filter-btn span {
+                display: none;
+            }
+
+            .filter-btn {
+                padding: 6px;
+                width: 32px;
+                height: 32px;
+                justify-content: center;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .sidebar-header {
+                padding: 16px;
+            }
+
+            .chat-header {
+                padding: 12px 16px;
+            }
+
+            .messages {
+                padding: 16px;
+            }
+
+            .message-content {
+                padding: 10px 12px;
+            }
+        }
+    </style>
 </head>
-
 <body>
 
+<!-- Mobile Header -->
+<div class="mobile-header">
+    <button class="back-btn" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+    </button>
+    <h2 id="mobileTitle">CRM Conversations</h2>
+    <button class="action-btn" onclick="loadData()" title="Refresh">
+        <i class="fas fa-sync-alt"></i>
+    </button>
+</div>
+
 <div class="app">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-header">
+            <h1><i class="fas fa-comments"></i> CRM Conversations</h1>
+            
+            <!-- Search Bar -->
+            <div class="search-container">
+                <i class="fas fa-search"></i>
+                <input type="text" id="searchInput" placeholder="Search users or messages..." autocomplete="off">
+            </div>
+            
+            <!-- Filters -->
+            <div class="filters">
+                <button class="filter-btn active" data-filter="all">
+                    <i class="fas fa-layer-group"></i>
+                    <span>All</span>
+                </button>
+                <button class="filter-btn" data-filter="pinned">
+                    <i class="fas fa-thumbtack"></i>
+                    <span>Pinned</span>
+                </button>
+                <button class="filter-btn" data-filter="whatsapp">
+                    <i class="fab fa-whatsapp"></i>
+                    <span>WhatsApp</span>
+                </button>
+                <button class="filter-btn" data-filter="web">
+                    <i class="fas fa-globe"></i>
+                    <span>Web</span>
+                </button>
+            </div>
+        </div>
 
-  <aside class="sidebar">
-    <div class="sidebar-header">Conversations</div>
-    <div id="userList" class="user-list"></div>
-  </aside>
+        <!-- User List -->
+        <div id="userList" class="user-list"></div>
+    </aside>
 
-  <main class="chat">
-    <div id="chatHeader" class="chat-header">Select a conversation</div>
-    <div id="messages" class="messages"></div>
-  </main>
+    <!-- CHAT AREA -->
+    <main class="chat hidden">
+        <header class="chat-header">
+            <div class="chat-header-left">
+                <button class="back-btn" onclick="toggleSidebar()">
+                    <i class="fas fa-chevron-left"></i>
+                </button>
+                <div>
+                    <div class="chat-user" id="chatHeader">Select a conversation</div>
+                    <div class="lead-stage" id="leadStage"></div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="action-btn" onclick="togglePin(currentUser)" id="pinBtn" title="Pin conversation">
+                    <i class="far fa-thumbtack"></i>
+                </button>
+                <button class="action-btn" onclick="addNote()" title="Add note">
+                    <i class="far fa-sticky-note"></i>
+                </button>
+            </div>
+        </header>
 
+        <div id="messages" class="messages"></div>
+        
+        <!-- Quick Actions -->
+        <div class="quick-actions">
+            <select class="stage-select" id="stageSelect" onchange="updateLeadStage(currentUser, this.value)">
+                <option value="">Set lead stage...</option>
+                <option value="new">👋 New Lead</option>
+                <option value="contacted">📞 Contacted</option>
+                <option value="qualified">✅ Qualified</option>
+                <option value="proposal">📄 Proposal</option>
+                <option value="negotiation">🤝 Negotiation</option>
+                <option value="won">🏆 Won</option>
+                <option value="lost">❌ Lost</option>
+            </select>
+            <button class="btn-primary" onclick="markAsWon()">
+                <i class="fas fa-trophy"></i>
+                <span>Mark as Won</span>
+            </button>
+        </div>
+    </main>
 </div>
 
 <script>
-/* ========= READ-ONLY CRM LOGIC ========= */
-
+/* ====== GLOBAL VARIABLES ====== */
 const API_URL = "/api/conversations";
-
 let allMessages = [];
 let currentUser = null;
+let pinnedUsers = new Set();
+let leadStages = {};
+let activeFilter = "all";
+let searchQuery = "";
+let sidebarVisible = true;
 
+// Lead stages configuration
+const LEAD_STAGES = {
+    new: { label: "👋 New Lead", color: "#64748b" },
+    contacted: { label: "📞 Contacted", color: "#3b82f6" },
+    qualified: { label: "✅ Qualified", color: "#10b981" },
+    proposal: { label: "📄 Proposal", color: "#8b5cf6" },
+    negotiation: { label: "🤝 Negotiation", color: "#f59e0b" },
+    won: { label: "🏆 Won", color: "#059669" },
+    lost: { label: "❌ Lost", color: "#ef4444" }
+};
+
+/* ====== DATA LOADING ====== */
 async function loadData() {
-  const res = await fetch(API_URL);
-  allMessages = await res.json();
-  renderUsers();
+    try {
+        const res = await fetch(API_URL);
+        allMessages = await res.json();
+        loadLocalData();
+        renderUsers();
+    } catch (error) {
+        console.error("Error loading data:", error);
+        alert("Failed to load conversations. Please try again.");
+    }
 }
 
+function loadLocalData() {
+    try {
+        const savedPinned = localStorage.getItem('crm_pinnedUsers');
+        const savedStages = localStorage.getItem('crm_leadStages');
+        
+        if (savedPinned) {
+            pinnedUsers = new Set(JSON.parse(savedPinned));
+        }
+        
+        if (savedStages) {
+            leadStages = JSON.parse(savedStages);
+        }
+    } catch (e) {
+        console.warn("Failed to load local data:", e);
+    }
+}
+
+function saveLocalData() {
+    try {
+        localStorage.setItem('crm_pinnedUsers', JSON.stringify([...pinnedUsers]));
+        localStorage.setItem('crm_leadStages', JSON.stringify(leadStages));
+    } catch (e) {
+        console.warn("Failed to save local data:", e);
+    }
+}
+
+/* ====== USER LIST RENDERING ====== */
 function renderUsers() {
-  const list = document.getElementById("userList");
-  list.innerHTML = "";
-
-  const users = [...new Set(allMessages.map(m => m.user_id))];
-
-  users.forEach(userId => {
-    const last = allMessages.filter(m => m.user_id === userId).slice(-1)[0];
-
-    const div = document.createElement("div");
-    div.className = "user";
-    div.innerHTML = `
-      <div class="user-id">${userId}</div>
-      <div class="channel">${last.channel}</div>
-    `;
-
-    div.onclick = () => openChat(userId, div);
-    list.appendChild(div);
-  });
+    const list = document.getElementById("userList");
+    list.innerHTML = "";
+    
+    // Group users by date
+    const usersByDate = groupUsersByDate();
+    
+    // Show pinned section if there are pinned users
+    if (pinnedUsers.size > 0 && (activeFilter === "all" || activeFilter === "pinned")) {
+        const pinnedHeader = document.createElement("div");
+        pinnedHeader.className = "section-header";
+        pinnedHeader.innerHTML = `<i class="fas fa-thumbtack"></i> Pinned Conversations (${pinnedUsers.size})`;
+        list.appendChild(pinnedHeader);
+        
+        [...pinnedUsers].forEach(userId => {
+            const userMessages = allMessages.filter(m => m.user_id === userId);
+            if (userMessages.length > 0) {
+                const lastMsg = userMessages[userMessages.length - 1];
+                if (shouldShowUser(userId, userMessages)) {
+                    renderUserItem(userId, lastMsg, userMessages, true);
+                }
+            }
+        });
+    }
+    
+    // Show regular conversations
+    Object.keys(usersByDate).forEach(dateGroup => {
+        if (usersByDate[dateGroup].length > 0) {
+            const dateHeader = document.createElement("div");
+            dateHeader.className = "date-separator";
+            dateHeader.innerHTML = `<span>${dateGroup}</span>`;
+            list.appendChild(dateHeader);
+            
+            usersByDate[dateGroup].forEach(({ userId, lastMsg, messages }) => {
+                if (!pinnedUsers.has(userId) && shouldShowUser(userId, messages)) {
+                    renderUserItem(userId, lastMsg, messages, false);
+                }
+            });
+        }
+    });
+    
+    // Show empty state
+    if (list.children.length === 0) {
+        const emptyState = document.createElement("div");
+        emptyState.className = "date-separator";
+        emptyState.innerHTML = `<span>No conversations found</span>`;
+        list.appendChild(emptyState);
+    }
 }
 
-function openChat(userId, el) {
-  currentUser = userId;
+function renderUserItem(userId, lastMsg, messages, isPinned) {
+    const list = document.getElementById("userList");
+    const leadStage = leadStages[userId] || "new";
+    const stageConfig = LEAD_STAGES[leadStage];
+    
+    const userDiv = document.createElement("div");
+    userDiv.className = `user ${isPinned ? "pinned" : ""} ${currentUser === userId ? "active" : ""}`;
+    
+    const timeAgo = formatTimeAgo(new Date(lastMsg.timestamp));
+    const messageCount = messages.length;
+    
+    userDiv.innerHTML = `
+        <div class="user-header">
+            <div class="user-id">${userId}</div>
+            <div class="user-meta">
+                <span class="time">${timeAgo}</span>
+                <button class="pin-btn" onclick="togglePin('${userId}', event)">
+                    <i class="fas fa-thumbtack"></i>
+                </button>
+            </div>
+        </div>
+        <div class="user-details">
+            <span class="channel">${lastMsg.channel}</span>
+            <span class="message-count">${messageCount} messages</span>
+            <span style="color: ${stageConfig.color}; font-weight: 500;">${stageConfig.label}</span>
+        </div>
+        <div class="message-preview">${truncateText(lastMsg.message, 60)}</div>
+    `;
+    
+    userDiv.onclick = (e) => {
+        if (!e.target.closest('.pin-btn')) {
+            openChat(userId, userDiv);
+        }
+    };
+    
+    list.appendChild(userDiv);
+}
 
-  document.querySelectorAll(".user").forEach(u =>
-    u.classList.remove("active")
-  );
-  el.classList.add("active");
+function groupUsersByDate() {
+    const users = [...new Set(allMessages.map(m => m.user_id))];
+    const groups = {};
+    
+    users.forEach(userId => {
+        const userMessages = allMessages.filter(m => m.user_id === userId);
+        const lastMsg = userMessages[userMessages.length - 1];
+        const date = new Date(lastMsg.timestamp);
+        
+        let dateLabel;
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (date.toDateString() === today.toDateString()) {
+            dateLabel = "Today";
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            dateLabel = "Yesterday";
+        } else {
+            dateLabel = date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+        }
+        
+        if (!groups[dateLabel]) groups[dateLabel] = [];
+        groups[dateLabel].push({ userId, lastMsg, messages: userMessages });
+    });
+    
+    // Sort groups chronologically
+    const sortedGroups = {};
+    const order = ['Today', 'Yesterday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    order.forEach(key => {
+        if (groups[key]) sortedGroups[key] = groups[key];
+    });
+    
+    // Add remaining dates
+    Object.keys(groups).forEach(key => {
+        if (!sortedGroups[key]) sortedGroups[key] = groups[key];
+    });
+    
+    return sortedGroups;
+}
 
-  document.getElementById("chatHeader").innerText = userId;
-  renderMessages();
+function shouldShowUser(userId, messages) {
+    // Filter by search
+    if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        const userMatches = userId.toLowerCase().includes(query);
+        const messageMatches = messages.some(m => m.message.toLowerCase().includes(query));
+        if (!userMatches && !messageMatches) return false;
+    }
+    
+    // Filter by channel
+    if (activeFilter === "whatsapp" || activeFilter === "web") {
+        const hasChannel = messages.some(m => m.channel === activeFilter);
+        if (!hasChannel) return false;
+    }
+    
+    // Filter by pinned
+    if (activeFilter === "pinned" && !pinnedUsers.has(userId)) {
+        return false;
+    }
+    
+    return true;
+}
+
+/* ====== CHAT FUNCTIONS ====== */
+function openChat(userId, element) {
+    currentUser = userId;
+    
+    // Update active state
+    document.querySelectorAll(".user").forEach(u => u.classList.remove("active"));
+    if (element) element.classList.add("active");
+    
+    // Update header
+    document.getElementById("chatHeader").textContent = userId;
+    document.getElementById("mobileTitle").textContent = userId;
+    
+    // Update lead stage UI
+    const leadStage = leadStages[userId] || "new";
+    const stageConfig = LEAD_STAGES[leadStage];
+    document.getElementById("leadStage").innerHTML = `
+        <select class="stage-select" onchange="updateLeadStage('${userId}', this.value)">
+            ${Object.entries(LEAD_STAGES).map(([key, stage]) => 
+                `<option value="${key}" ${leadStage === key ? 'selected' : ''}>${stage.label}</option>`
+            ).join('')}
+        </select>
+    `;
+    
+    // Update pin button
+    const pinBtn = document.getElementById("pinBtn");
+    pinBtn.innerHTML = pinnedUsers.has(userId) ? '<i class="fas fa-thumbtack"></i>' : '<i class="far fa-thumbtack"></i>';
+    pinBtn.title = pinnedUsers.has(userId) ? "Unpin conversation" : "Pin conversation";
+    
+    // Show chat on mobile
+    if (window.innerWidth <= 768) {
+        document.querySelector(".sidebar").classList.add("hidden");
+        document.querySelector(".chat").classList.remove("hidden");
+    }
+    
+    renderMessages();
 }
 
 function renderMessages() {
-  const box = document.getElementById("messages");
-  box.innerHTML = "";
-
-  allMessages
-    .filter(m => m.user_id === currentUser)
-    .forEach(m => {
-      const div = document.createElement("div");
-      div.className = "message " + m.role;
-      div.innerText = m.message;
-      box.appendChild(div);
+    const box = document.getElementById("messages");
+    box.innerHTML = "";
+    
+    if (!currentUser) return;
+    
+    const userMessages = allMessages.filter(m => m.user_id === currentUser);
+    
+    // Group messages by date
+    const messagesByDate = {};
+    userMessages.forEach(msg => {
+        const date = new Date(msg.timestamp).toDateString();
+        if (!messagesByDate[date]) messagesByDate[date] = [];
+        messagesByDate[date].push(msg);
     });
-
-  box.scrollTop = box.scrollHeight;
+    
+    // Render with date separators
+    Object.keys(messagesByDate).forEach(date => {
+        const dateSep = document.createElement("div");
+        dateSep.className = "date-separator";
+        dateSep.innerHTML = `<span>${formatDateHeader(date)}</span>`;
+        box.appendChild(dateSep);
+        
+        messagesByDate[date].forEach(msg => {
+            const messageDiv = document.createElement("div");
+            messageDiv.className = `message ${msg.role}`;
+            
+            const time = new Date(msg.timestamp).toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+            
+            messageDiv.innerHTML = `
+                <div class="message-header">
+                    <span class="message-role">${msg.role === 'user' ? 'Customer' : 'Assistant'}</span>
+                    <span class="message-channel">${msg.channel}</span>
+                    <span class="message-time">${time}</span>
+                </div>
+                <div class="message-content">${msg.message}</div>
+            `;
+            
+            box.appendChild(messageDiv);
+        });
+    });
+    
+    // Scroll to bottom
+    box.scrollTop = box.scrollHeight;
 }
 
-loadData();
-</script>
+/* ====== FEATURE FUNCTIONS ====== */
+function togglePin(userId, event) {
+    if (event) event.stopPropagation();
+    
+    if (pinnedUsers.has(userId)) {
+        pinnedUsers.delete(userId);
+    } else {
+        pinnedUsers.add(userId);
+    }
+    
+    saveLocalData();
+    renderUsers();
+    
+    // Update pin button if this is the current chat
+    if (currentUser === userId) {
+        const pinBtn = document.getElementById("pinBtn");
+        pinBtn.innerHTML = pinnedUsers.has(userId) ? '<i class="fas fa-thumbtack"></i>' : '<i class="far fa-thumbtack"></i>';
+        pinBtn.title = pinnedUsers.has(userId) ? "Unpin conversation" : "Pin conversation";
+    }
+}
 
+function updateLeadStage(userId, stage) {
+    leadStages[userId] = stage;
+    saveLocalData();
+    renderUsers();
+}
+
+function addNote() {
+    if (!currentUser) return;
+    
+    const note = prompt("Add a note for this lead:");
+    if (note) {
+        // In a real implementation, you would save this to your backend
+        alert("Note added (in a real app, this would be saved to your database)");
+    }
+}
+
+function markAsWon() {
+    if (!currentUser) return;
+    
+    updateLeadStage(currentUser, "won");
+    alert("Lead marked as won!");
+}
+
+/* ====== UI UTILITIES ====== */
+function toggleSidebar() {
+    sidebarVisible = !sidebarVisible;
+    const sidebar = document.querySelector(".sidebar");
+    const chat = document.querySelector(".chat");
+    
+    if (window.innerWidth <= 768) {
+        if (sidebarVisible) {
+            sidebar.classList.remove("hidden");
+            chat.classList.add("hidden");
+        } else {
+            sidebar.classList.add("hidden");
+            chat.classList.remove("hidden");
+        }
+    }
+}
+
+function formatTimeAgo(date) {
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+    
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+}
+
+function formatDateHeader(dateStr) {
+    const date = new Date(dateStr);
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) return "Today";
+    if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+    return date.toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' });
+}
+
+function truncateText(text, maxLength) {
+    return text.length > maxLength ? text.substring(0, maxLength) + "..." : text;
+}
+
+/* ====== EVENT LISTENERS ====== */
+document.addEventListener("DOMContentLoaded", () => {
+    // Filter buttons
+    document.querySelectorAll(".filter-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+            document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+            btn.classList.add("active");
+            activeFilter = btn.dataset.filter;
+            renderUsers();
+        });
+    });
+    
+    // Search input
+    document.getElementById("searchInput").addEventListener("input", (e) => {
+        searchQuery = e.target.value;
+        renderUsers();
+    });
+    
+    // Responsive adjustments
+    window.addEventListener("resize", () => {
+        if (window.innerWidth > 768) {
+            document.querySelector(".sidebar").classList.remove("hidden");
+            document.querySelector(".chat").classList.remove("hidden");
+        }
+    });
+    
+    // Load initial data
+    loadData();
+});
+</script>
 </body>
 </html>
