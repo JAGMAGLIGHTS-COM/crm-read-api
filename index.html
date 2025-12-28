@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>CRM – Conversations</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-top">
+      <h1>CRM</h1>
+      <div class="filters">
+        <button class="active" data-channel="all">All</button>
+        <button data-channel="web">Web</button>
+        <button data-channel="whatsapp">WhatsApp</button>
+      </div>
+    </div>
+
+    <div id="userList" class="chat-list"></div>
+  </aside>
+
+  <!-- CHAT -->
+  <main class="chat-area">
+    <header class="chat-header" id="chatHeader">
+      Select a conversation
+    </header>
+
+    <section id="messages" class="messages"></section>
+  </main>
+
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>
