@@ -268,6 +268,13 @@
             padding: 10px;
             border-radius: var(--radius-sm);
             text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
         }
 
         .stat-value {
@@ -319,6 +326,16 @@
 
         .user-item.pinned {
             background: var(--gold-light);
+        }
+
+        .user-item.pinned::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 0;
+            bottom: 0;
+            width: 3px;
+            background: var(--gold);
         }
 
         .user-header {
@@ -487,6 +504,24 @@
             color: var(--gold);
         }
 
+        .stats-btn {
+            background: var(--gold);
+            color: var(--text-primary);
+            border: none;
+            padding: 6px 12px;
+            border-radius: var(--radius-sm);
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .stats-btn:hover {
+            background: var(--gold-dark);
+        }
+
         /* Messages Container */
         .messages-container {
             flex: 1;
@@ -495,6 +530,50 @@
             background: var(--bg-secondary);
             display: flex;
             flex-direction: column;
+        }
+
+        /* Stats Panel */
+        .stats-panel {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: var(--bg-primary);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .stats-panel.hidden {
+            display: none;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+
+        .stats-card {
+            background: var(--bg-primary);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: var(--shadow);
+        }
+
+        .stats-card h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .stats-card h3 i {
+            color: var(--gold);
         }
 
         /* Message Date Separator */
@@ -808,6 +887,31 @@
             transition: width 1s ease;
         }
 
+        /* Detailed Stats */
+        .detailed-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+        }
+
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px;
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 12px;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
         /* ====== DROPDOWN MENU ====== */
         .dropdown-menu {
             position: absolute;
@@ -887,6 +991,14 @@
             .quick-stats {
                 grid-template-columns: repeat(4, 1fr);
             }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .detailed-stats {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 480px) {
@@ -898,7 +1010,8 @@
                 padding: 12px 16px;
             }
 
-            .messages-container {
+            .messages-container,
+            .stats-panel {
                 padding: 16px;
             }
 
@@ -961,8 +1074,9 @@
             <i class="fas fa-bars"></i>
         </button>
         <h1 id="mobileTitle">CRM Conversations</h1>
-        <button class="menu-btn" onclick="showMenu()">
-            <i class="fas fa-ellipsis-v"></i>
+        <button class="stats-btn" onclick="toggleStatsPanel()">
+            <i class="fas fa-chart-bar"></i>
+            <span>Stats</span>
         </button>
     </div>
 
@@ -996,9 +1110,14 @@
                         <i class="fas fa-comments"></i>
                         CRM Conversations
                     </span>
-                    <button class="menu-btn" onclick="showMenu()">
-                        <i class="fas fa-ellipsis-v"></i>
-                    </button>
+                    <div>
+                        <button class="menu-btn" onclick="loadData()" title="Refresh">
+                            <i class="fas fa-sync-alt"></i>
+                        </button>
+                        <button class="menu-btn" onclick="logout()" title="Logout">
+                            <i class="fas fa-sign-out-alt"></i>
+                        </button>
+                    </div>
                 </div>
                 
                 <!-- Search Bar -->
@@ -1029,19 +1148,19 @@
                 
                 <!-- Quick Stats -->
                 <div class="quick-stats">
-                    <div class="stat-box">
+                    <div class="stat-box" onclick="toggleStatsPanel()">
                         <div class="stat-value" id="totalUsers">0</div>
                         <div class="stat-label">Total Users</div>
                     </div>
-                    <div class="stat-box">
+                    <div class="stat-box" onclick="toggleStatsPanel()">
                         <div class="stat-value" id="totalMessages">0</div>
                         <div class="stat-label">Messages</div>
                     </div>
-                    <div class="stat-box">
+                    <div class="stat-box" onclick="toggleStatsPanel()">
                         <div class="stat-value" id="pinnedCount">0</div>
                         <div class="stat-label">Pinned</div>
                     </div>
-                    <div class="stat-box">
+                    <div class="stat-box" onclick="toggleStatsPanel()">
                         <div class="stat-value" id="activeToday">0</div>
                         <div class="stat-label">Active Today</div>
                     </div>
@@ -1065,17 +1184,52 @@
                     </div>
                 </div>
                 <div class="chat-actions">
-                    <button class="action-btn" onclick="togglePin(currentUser)" id="pinBtn" title="Pin conversation">
-                        <i class="far fa-thumbtack"></i>
-                    </button>
-                    <button class="action-btn" onclick="addNote()" title="Add note">
-                        <i class="far fa-sticky-note"></i>
+                    <button class="stats-btn" onclick="toggleStatsPanel()">
+                        <i class="fas fa-chart-bar"></i>
+                        <span>View Stats</span>
                     </button>
                 </div>
             </header>
 
             <!-- Messages Container -->
             <div id="messages" class="messages-container"></div>
+            
+            <!-- Stats Panel -->
+            <div id="statsPanel" class="stats-panel hidden">
+                <div class="stats-grid">
+                    <!-- Overview Stats -->
+                    <div class="stats-card">
+                        <h3><i class="fas fa-chart-line"></i> Overview</h3>
+                        <div class="detailed-stats" id="overviewStats">
+                            <!-- Filled by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Channel Stats -->
+                    <div class="stats-card">
+                        <h3><i class="fas fa-signal"></i> Channel Distribution</h3>
+                        <div id="channelStats" class="detailed-stats">
+                            <!-- Filled by JavaScript -->
+                        </div>
+                    </div>
+
+                    <!-- Lead Funnel -->
+                    <div class="stats-card" style="grid-column: span 2;">
+                        <h3><i class="fas fa-funnel-dollar"></i> Lead Funnel</h3>
+                        <div id="leadFunnel" class="lead-funnel">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+
+                    <!-- Daily Activity -->
+                    <div class="stats-card" style="grid-column: span 2;">
+                        <h3><i class="fas fa-calendar-alt"></i> Activity Summary</h3>
+                        <div id="activitySummary" class="detailed-stats">
+                            <!-- Filled by JavaScript -->
+                        </div>
+                    </div>
+                </div>
+            </div>
             
             <!-- Lead Stage Selector -->
             <div class="lead-stage-selector">
@@ -1089,9 +1243,13 @@
                     <option value="won">🏆 Won</option>
                     <option value="lost">❌ Lost</option>
                 </select>
+                <button class="gold-btn" onclick="addNote()">
+                    <i class="fas fa-sticky-note"></i>
+                    <span>Add Note</span>
+                </button>
                 <button class="gold-btn" onclick="markAsWon()">
                     <i class="fas fa-trophy"></i>
-                    <span>Mark as Won</span>
+                    <span>Mark Won</span>
                 </button>
             </div>
         </main>
@@ -1117,7 +1275,7 @@
                 <!-- Lead Funnel Card -->
                 <div class="analytics-card">
                     <h3><i class="fas fa-funnel-dollar"></i> Lead Funnel</h3>
-                    <div id="leadFunnel" class="lead-funnel">
+                    <div id="analyticsLeadFunnel" class="lead-funnel">
                         <!-- Dynamically populated -->
                     </div>
                 </div>
@@ -1125,7 +1283,7 @@
                 <!-- Channel Distribution Card -->
                 <div class="analytics-card">
                     <h3><i class="fas fa-chart-pie"></i> Channel Distribution</h3>
-                    <div id="channelChart" class="chart-container">
+                    <div id="analyticsChannelChart" class="chart-container">
                         <!-- Dynamically populated -->
                     </div>
                 </div>
@@ -1133,7 +1291,7 @@
                 <!-- Activity Timeline Card -->
                 <div class="analytics-card">
                     <h3><i class="fas fa-calendar-alt"></i> Daily Activity</h3>
-                    <div id="activityChart" class="chart-container">
+                    <div id="analyticsActivityChart" class="chart-container">
                         <!-- Dynamically populated -->
                     </div>
                 </div>
@@ -1141,7 +1299,7 @@
                 <!-- Lead Stage Distribution Card -->
                 <div class="analytics-card">
                     <h3><i class="fas fa-chart-bar"></i> Lead Stages</h3>
-                    <div id="stageChart" class="chart-container">
+                    <div id="analyticsStageChart" class="chart-container">
                         <!-- Dynamically populated -->
                     </div>
                 </div>
@@ -1162,6 +1320,7 @@ let leadStages = {};
 let activeFilter = "all";
 let searchQuery = "";
 let sidebarVisible = true;
+let statsPanelVisible = false;
 
 // Lead stages with colors
 const LEAD_STAGES = {
@@ -1214,32 +1373,202 @@ function showPage(pageId) {
         updateAnalytics();
     }
     
-    // Hide dropdown menu
-    hideMenu();
+    // Hide stats panel when switching pages
+    hideStatsPanel();
 }
 
 function logout() {
     showPage("loginPage");
-    hideMenu();
 }
 
-/* ====== DROPDOWN MENU ====== */
-function showMenu() {
-    document.getElementById("dropdownMenu").classList.add("show");
-}
-
-function hideMenu() {
-    document.getElementById("dropdownMenu").classList.remove("show");
-}
-
-// Close dropdown when clicking outside
-document.addEventListener("click", function(event) {
-    const dropdown = document.getElementById("dropdownMenu");
-    const menuBtn = document.querySelector(".menu-btn");
-    if (!dropdown.contains(event.target) && !menuBtn.contains(event.target)) {
-        hideMenu();
+/* ====== STATS PANEL FUNCTIONS ====== */
+function toggleStatsPanel() {
+    statsPanelVisible = !statsPanelVisible;
+    const messagesContainer = document.getElementById("messages");
+    const statsPanel = document.getElementById("statsPanel");
+    const chatHeader = document.querySelector(".chat-user-name");
+    
+    if (statsPanelVisible) {
+        messagesContainer.classList.add("hidden");
+        statsPanel.classList.remove("hidden");
+        if (chatHeader) {
+            chatHeader.textContent = "Statistics Dashboard";
+        }
+        updateStatsPanel();
+    } else {
+        messagesContainer.classList.remove("hidden");
+        statsPanel.classList.add("hidden");
+        if (chatHeader && currentUser) {
+            chatHeader.textContent = currentUser;
+        }
     }
-});
+}
+
+function hideStatsPanel() {
+    statsPanelVisible = false;
+    document.getElementById("messages")?.classList.remove("hidden");
+    document.getElementById("statsPanel")?.classList.add("hidden");
+}
+
+function updateStatsPanel() {
+    updateOverviewStats();
+    updateChannelStats();
+    updateLeadFunnel();
+    updateActivitySummary();
+}
+
+function updateOverviewStats() {
+    const uniqueUsers = [...new Set(allMessages.map(m => m.user_id))];
+    const totalMessages = allMessages.length;
+    const pinnedCount = pinnedUsers.size;
+    
+    // Count active today
+    const today = new Date();
+    const activeToday = uniqueUsers.filter(userId => {
+        const userMessages = allMessages.filter(m => m.user_id === userId);
+        const lastMsg = userMessages[userMessages.length - 1];
+        const msgDate = new Date(lastMsg.created_at || lastMsg.timestamp);
+        return msgDate.toDateString() === today.toDateString();
+    }).length;
+    
+    // Average messages per user
+    const avgMessages = uniqueUsers.length > 0 ? (totalMessages / uniqueUsers.length).toFixed(1) : 0;
+    
+    document.getElementById("overviewStats").innerHTML = `
+        <div class="stat-item">
+            <span class="stat-label">Total Conversations:</span>
+            <span class="stat-value">${uniqueUsers.length}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Total Messages:</span>
+            <span class="stat-value">${totalMessages}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Pinned Conversations:</span>
+            <span class="stat-value">${pinnedCount}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Active Today:</span>
+            <span class="stat-value">${activeToday}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Avg Messages/User:</span>
+            <span class="stat-value">${avgMessages}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Lead Stages Tracked:</span>
+            <span class="stat-value">${Object.keys(leadStages).length}</span>
+        </div>
+    `;
+}
+
+function updateChannelStats() {
+    // Calculate channel distribution
+    const channelCounts = {};
+    allMessages.forEach(msg => {
+        const channel = msg.channel || 'unknown';
+        channelCounts[channel] = (channelCounts[channel] || 0) + 1;
+    });
+    
+    const total = allMessages.length;
+    
+    const channelsHTML = Object.entries(channelCounts).map(([channel, count]) => {
+        const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+        const color = CHANNEL_COLORS[channel] || "#999999";
+        
+        return `
+            <div class="stat-item">
+                <span class="stat-label" style="color: ${color}">${channel}:</span>
+                <span class="stat-value">${count} (${percentage}%)</span>
+            </div>
+        `;
+    }).join('');
+    
+    document.getElementById("channelStats").innerHTML = channelsHTML || '<div class="stat-item">No channel data</div>';
+}
+
+function updateLeadFunnel() {
+    const funnel = document.getElementById("leadFunnel");
+    if (!funnel) return;
+    
+    // Calculate stage counts
+    const stats = {};
+    Object.keys(LEAD_STAGES).forEach(stage => {
+        stats[stage] = 0;
+    });
+    
+    const allUserIds = [...new Set(allMessages.map(m => m.user_id))];
+    allUserIds.forEach(userId => {
+        const stage = leadStages[userId] || "new";
+        stats[stage] = (stats[stage] || 0) + 1;
+    });
+    
+    // Calculate total
+    const total = allUserIds.length;
+    
+    // Render funnel
+    funnel.innerHTML = Object.entries(LEAD_STAGES).map(([key, stage]) => {
+        const count = stats[key] || 0;
+        const percentage = total > 0 ? Math.round((count / total) * 100) : 0;
+        
+        return `
+            <div class="funnel-stage" style="border-left-color: ${stage.color}">
+                <div class="stage-info">
+                    <span class="stage-icon">${stage.label.split(' ')[0]}</span>
+                    <div>
+                        <div class="stage-name">${stage.label.split(' ').slice(1).join(' ')}</div>
+                        <div class="stage-percentage">${percentage}%</div>
+                    </div>
+                </div>
+                <div class="stage-count">${count}</div>
+            </div>
+        `;
+    }).join('');
+}
+
+function updateActivitySummary() {
+    // Calculate activity by day
+    const activityByDay = {};
+    allMessages.forEach(msg => {
+        const date = new Date(msg.created_at || msg.timestamp);
+        const day = date.toLocaleDateString('en-US', { weekday: 'short' });
+        activityByDay[day] = (activityByDay[day] || 0) + 1;
+    });
+    
+    const days = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'short' });
+    const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('en-US', { weekday: 'short' });
+    
+    const totalThisWeek = Object.values(activityByDay).reduce((sum, count) => sum + count, 0);
+    const avgPerDay = totalThisWeek / 7;
+    
+    document.getElementById("activitySummary").innerHTML = `
+        <div class="stat-item">
+            <span class="stat-label">Today (${today}):</span>
+            <span class="stat-value">${activityByDay[today] || 0}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Yesterday (${yesterday}):</span>
+            <span class="stat-value">${activityByDay[yesterday] || 0}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">This Week Total:</span>
+            <span class="stat-value">${totalThisWeek}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Daily Average:</span>
+            <span class="stat-value">${Math.round(avgPerDay)}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Busiest Day:</span>
+            <span class="stat-value">${Object.keys(activityByDay).reduce((a, b) => activityByDay[a] > activityByDay[b] ? a : b) || 'N/A'}</span>
+        </div>
+        <div class="stat-item">
+            <span class="stat-label">Peak Messages:</span>
+            <span class="stat-value">${Math.max(...Object.values(activityByDay), 0)}</span>
+        </div>
+    `;
+}
 
 /* ====== DATA FUNCTIONS ====== */
 async function loadData() {
@@ -1250,7 +1579,7 @@ async function loadData() {
         allMessages = await res.json();
         loadLocalData();
         renderUsers();
-        updateStats();
+        updateAllStats();
         showToast("Data refreshed successfully", "success");
     } catch (error) {
         console.error("Error loading data:", error);
@@ -1285,7 +1614,12 @@ function saveLocalData() {
 }
 
 /* ====== STATS FUNCTIONS ====== */
-function updateStats() {
+function updateAllStats() {
+    updateQuickStats();
+    updateStatsPanel();
+}
+
+function updateQuickStats() {
     const uniqueUsers = [...new Set(allMessages.map(m => m.user_id))];
     const totalMessages = allMessages.length;
     const pinnedCount = pinnedUsers.size;
@@ -1452,6 +1786,9 @@ function shouldShowUser(userId, messages) {
 function openChat(userId, element) {
     currentUser = userId;
     
+    // Hide stats panel
+    hideStatsPanel();
+    
     // Update active state
     document.querySelectorAll(".user-item").forEach(u => u.classList.remove("active"));
     if (element) element.classList.add("active");
@@ -1468,11 +1805,6 @@ function openChat(userId, element) {
             ${stageConfig.label}
         </span>
     `;
-    
-    // Update pin button
-    const pinBtn = document.getElementById("pinBtn");
-    pinBtn.innerHTML = pinnedUsers.has(userId) ? '<i class="fas fa-thumbtack"></i>' : '<i class="far fa-thumbtack"></i>';
-    pinBtn.title = pinnedUsers.has(userId) ? "Unpin conversation" : "Pin conversation";
     
     // Update stage select
     document.getElementById("stageSelect").value = leadStage;
@@ -1566,29 +1898,6 @@ function renderMessages() {
 }
 
 /* ====== FEATURE FUNCTIONS ====== */
-function togglePin(userId) {
-    if (!userId) return;
-    
-    if (pinnedUsers.has(userId)) {
-        pinnedUsers.delete(userId);
-        showToast("Unpinned conversation", "info");
-    } else {
-        pinnedUsers.add(userId);
-        showToast("Pinned conversation", "success");
-    }
-    
-    saveLocalData();
-    renderUsers();
-    updateStats();
-    
-    // Update pin button if this is the current chat
-    if (currentUser === userId) {
-        const pinBtn = document.getElementById("pinBtn");
-        pinBtn.innerHTML = pinnedUsers.has(userId) ? '<i class="fas fa-thumbtack"></i>' : '<i class="far fa-thumbtack"></i>';
-        pinBtn.title = pinnedUsers.has(userId) ? "Unpin conversation" : "Pin conversation";
-    }
-}
-
 function updateLeadStage(userId, stage) {
     if (!userId) return;
     
@@ -1600,6 +1909,7 @@ function updateLeadStage(userId, stage) {
     
     // Update UI
     renderUsers();
+    updateAllStats();
     
     // Update header if this is the current chat
     if (currentUser === userId) {
@@ -1609,11 +1919,6 @@ function updateLeadStage(userId, stage) {
             </span>
         `;
     }
-    
-    // Update analytics if on analytics page
-    if (document.getElementById("analyticsPage").classList.contains("active")) {
-        updateAnalytics();
-    }
 }
 
 function addNote() {
@@ -1621,7 +1926,7 @@ function addNote() {
     
     const note = prompt("Add a note for this lead:");
     if (note) {
-        showToast("Note added (would save to database in production)", "success");
+        showToast("Note added", "success");
     }
 }
 
@@ -1634,13 +1939,13 @@ function markAsWon() {
 
 /* ====== ANALYTICS FUNCTIONS ====== */
 function updateAnalytics() {
-    updateLeadFunnel();
-    updateChannelChart();
-    updateStageChart();
+    updateAnalyticsLeadFunnel();
+    updateAnalyticsChannelChart();
+    updateAnalyticsStageChart();
 }
 
-function updateLeadFunnel() {
-    const funnel = document.getElementById("leadFunnel");
+function updateAnalyticsLeadFunnel() {
+    const funnel = document.getElementById("analyticsLeadFunnel");
     if (!funnel) return;
     
     // Calculate stage counts
@@ -1678,8 +1983,8 @@ function updateLeadFunnel() {
     }).join('');
 }
 
-function updateChannelChart() {
-    const chart = document.getElementById("channelChart");
+function updateAnalyticsChannelChart() {
+    const chart = document.getElementById("analyticsChannelChart");
     if (!chart) return;
     
     // Calculate channel distribution
@@ -1709,8 +2014,8 @@ function updateChannelChart() {
     }).join('');
 }
 
-function updateStageChart() {
-    const chart = document.getElementById("stageChart");
+function updateAnalyticsStageChart() {
+    const chart = document.getElementById("analyticsStageChart");
     if (!chart) return;
     
     // Calculate stage distribution
