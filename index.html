@@ -2,18 +2,33 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>CRM – Conversations</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>CRM Chat Dashboard</title>
   <link rel="stylesheet" href="styles.css" />
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 </head>
 <body>
 
-<div class="app">
+<!-- Mobile Header -->
+<div class="mobile-header">
+  <button class="btn-menu" id="mobileMenuToggle">
+    <i class="fas fa-bars"></i>
+  </button>
+  <h1>CRM Chat</h1>
+  <button class="btn-menu" onclick="loadData()" title="Refresh">
+    <i class="fas fa-sync-alt"></i>
+  </button>
+</div>
 
+<div class="app">
+  
   <!-- SIDEBAR -->
   <aside class="sidebar">
     <div class="sidebar-top">
-      <h1><i class="fas fa-comments"></i> CRM Chat</h1>
+      <h1>
+        <i class="fas fa-comments"></i>
+        <span>CRM Chat Dashboard</span>
+      </h1>
       
       <!-- Search Bar -->
       <div class="search-container">
@@ -21,7 +36,7 @@
         <input 
           type="text" 
           id="searchInput" 
-          placeholder="Search users or messages..." 
+          placeholder="Search conversations..." 
           autocomplete="off"
         />
       </div>
@@ -33,59 +48,67 @@
       
       <!-- Filters -->
       <div class="filters">
-        <button class="active" data-channel="all">All</button>
-        <button data-channel="pinned"><i class="fas fa-thumbtack"></i> Pinned</button>
-        <button data-channel="web">Web</button>
-        <button data-channel="whatsapp">WhatsApp</button>
-        <button data-channel="telegram">Telegram</button>
-        <button data-channel="email">Email</button>
+        <button class="active" data-channel="all">
+          <i class="fas fa-layer-group"></i>
+          <span>All</span>
+        </button>
+        <button data-channel="pinned">
+          <i class="fas fa-thumbtack"></i>
+          <span>Pinned</span>
+        </button>
+        <button data-channel="whatsapp">
+          <i class="fab fa-whatsapp"></i>
+          <span>WhatsApp</span>
+        </button>
+        <button data-channel="telegram">
+          <i class="fab fa-telegram"></i>
+          <span>Telegram</span>
+        </button>
+        <button data-channel="web">
+          <i class="fas fa-globe"></i>
+          <span>Web</span>
+        </button>
+        <button data-channel="email">
+          <i class="fas fa-envelope"></i>
+          <span>Email</span>
+        </button>
       </div>
     </div>
 
     <div id="userList" class="chat-list"></div>
   </aside>
 
-  <!-- CHAT -->
+  <!-- CHAT AREA -->
   <main class="chat-area">
     <header class="chat-header" id="chatHeader">
-      <div class="chat-header-content">
-        <span>Select a conversation</span>
-        <div class="header-actions">
-          <button class="btn-action" title="Mark as read">
-            <i class="fas fa-check-double"></i>
-          </button>
-          <button class="btn-action" title="Add note">
-            <i class="fas fa-sticky-note"></i>
-          </button>
-          <button class="btn-action" title="Export chat">
-            <i class="fas fa-download"></i>
-          </button>
-        </div>
-      </div>
+      <!-- Dynamically populated -->
     </header>
 
     <section id="messages" class="messages"></section>
     
-    <!-- Quick Actions Bar -->
+    <!-- Quick Actions -->
     <div class="quick-actions">
       <select id="quickStage" onchange="if(currentUser) updateLeadStage(currentUser, this.value)">
-        <option value="">Set lead stage...</option>
+        <option value="">Update lead stage...</option>
         <option value="new">👋 New Lead</option>
         <option value="contacted">📞 Contacted</option>
         <option value="qualified">✅ Qualified</option>
-        <option value="proposal">📄 Proposal Sent</option>
+        <option value="proposal">📄 Proposal</option>
         <option value="negotiation">🤝 Negotiation</option>
         <option value="won">🏆 Won</option>
         <option value="lost">❌ Lost</option>
       </select>
-      <button class="btn-primary">
-        <i class="fas fa-reply"></i> Reply
+      <button class="btn-primary" onclick="addNote(currentUser)">
+        <i class="fas fa-sticky-note"></i>
+        <span class="btn-text">Add Note</span>
       </button>
     </div>
   </main>
 
 </div>
 
-<script src="app.js"></script>
+<!-- Import Supabase -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script type="module" src="app.js"></script>
 </body>
 </html>
