@@ -1,10 +1,9 @@
-import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+// Initialize Supabase client (using your project details)
+const supabaseUrl = 'https://your-project.supabase.co';  // Replace with your actual URL
+const supabaseKey = 'your-anon-or-public-key';  // Use anon key, NOT service role key
 
-// Initialize Supabase (client-side)
-const supabase = createClient(
-  'https://your-project.supabase.co',  // Replace with your Supabase URL
-  'your-anon-key'                      // Replace with your anon key
-);
+// Initialize Supabase client
+const supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
 
 let allMessages = [];
 let currentUser = null;
@@ -17,8 +16,8 @@ let sidebarVisible = true;
 // Load persistent data from localStorage
 function loadPersistentData() {
   try {
-    const savedPinned = localStorage.getItem('pinnedUsers');
-    const savedStages = localStorage.getItem('leadStages');
+    const savedPinned = localStorage.getItem('crm_pinnedUsers');
+    const savedStages = localStorage.getItem('crm_leadStages');
     
     if (savedPinned) {
       pinnedUsers = new Set(JSON.parse(savedPinned));
@@ -35,14 +34,14 @@ function loadPersistentData() {
 // Save to localStorage
 function savePersistentData() {
   try {
-    localStorage.setItem('pinnedUsers', JSON.stringify([...pinnedUsers]));
-    localStorage.setItem('leadStages', JSON.stringify(leadStages));
+    localStorage.setItem('crm_pinnedUsers', JSON.stringify([...pinnedUsers]));
+    localStorage.setItem('crm_leadStages', JSON.stringify(leadStages));
   } catch (e) {
     console.warn('Failed to save persistent data:', e);
   }
 }
 
-// Lead stages funnel with professional colors
+// Lead stages funnel
 const LEAD_STAGES = [
   { id: 'new', label: '👋 New Lead', color: '#64748b', bg: '#f1f5f9' },
   { id: 'contacted', label: '📞 Contacted', color: '#3b82f6', bg: '#dbeafe' },
@@ -55,24 +54,39 @@ const LEAD_STAGES = [
 
 async function loadData() {
   try {
-    // Fetch from Supabase
+    showLoading(true);
+    
+    // OPTION 1: If you're using your Vercel API
+    // const response = await fetch('/api/conversations');
+    // const data = await response.json();
+    // allMessages = data;
+    
+    // OPTION 2: Direct Supabase query (client-side)
     const { data, error } = await supabase
       .from('conversations')
       .select('*')
-      .in('channel', ['web', 'whatsapp', 'telegram', 'email', 'text'])
       .order('created_at', { ascending: true });
-
-    if (error) throw error;
-
-    allMessages = data.map(msg => ({
-      user_id: msg.user_id,
-      channel: msg.channel,
-      role: msg.role,
-      message: msg.message,
-      timestamp: msg.created_at || msg.timestamp || new Date().toISOString(),
-      note: msg.note || ''
-    }));
-
+    
+    if (error) {
+      console.error('Supabase error:', error);
+      showToast('Error loading conversations: ' + error.message, 'error');
+      // Fallback to mock data
+      allMessages = generateMockData();
+    } else {
+      console.log('Fetched messages:', data.length);
+      allMessages = data.map(msg => ({
+        id: msg.id,
+        user_id: msg.user_id || 'Unknown',
+        channel: msg.channel || 'web',
+        role: msg.role || 'user',
+        message: msg.message || '',
+        timestamp: msg.created_at || msg.timestamp || new Date().toISOString(),
+        created_at: msg.created_at,
+        note: msg.note || '',
+        read: false
+      }));
+    }
+    
     // Load persistent data
     loadPersistentData();
     
@@ -82,15 +96,50 @@ async function loadData() {
   } catch (error) {
     console.error('Error loading data:', error);
     showToast('Error loading conversations', 'error');
+    // Use mock data for demo
+    allMessages = generateMockData();
+    renderUserList();
+    updateLeadStats();
+  } finally {
+    showLoading(false);
   }
+}
+
+// Mock data for testing if Supabase fails
+function generateMockData() {
+  const users = ['alex_johnson', 'sarah_chen', 'mike_roberts', 'jessica_lee', 'web_user_706995'];
+  const channels = ['web', 'whatsapp', 'telegram', 'email'];
+  const messages = [];
+  
+  users.forEach(user => {
+    const channel = channels[Math.floor(Math.random() * channels.length)];
+    const messageCount = Math.floor(Math.random() * 5) + 1;
+    
+    for (let i = 0; i < messageCount; i++) {
+      messages.push({
+        id: `msg_${user}_${i}`,
+        user_id: user,
+        channel: channel,
+        role: i % 2 === 0 ? 'user' : 'ai',
+        message: i % 2 === 0 ? 
+          `Hello, I need help with ${['booking', 'pricing', 'support', 'demo'][Math.floor(Math.random() * 4)]}` :
+          `Thank you for reaching out. Let me help you with that.`,
+        timestamp: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+        created_at: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
+        read: Math.random() > 0.5
+      });
+    }
+  });
+  
+  return messages.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
 }
 
 function renderUserList() {
   const list = document.getElementById("userList");
   list.innerHTML = '';
 
-  // Create pinned section if has pinned
-  if (pinnedUsers.size > 0) {
+  // Show pinned section if has pinned
+  if (pinnedUsers.size > 0 && activeChannel !== 'pinned') {
     const pinnedHeader = document.createElement("div");
     pinnedHeader.className = "section-header";
     pinnedHeader.innerHTML = `
@@ -102,7 +151,7 @@ function renderUserList() {
     `;
     list.appendChild(pinnedHeader);
 
-    // Show pinned users first
+    // Show pinned users
     [...pinnedUsers].forEach(userId => {
       const userMessages = allMessages.filter(m => m.user_id === userId);
       if (userMessages.length > 0) {
@@ -115,17 +164,19 @@ function renderUserList() {
   // Regular conversations
   let filtered = filterMessages();
   
-  // Remove pinned users from regular list (they're already shown in pinned section)
-  filtered = filtered.filter(msg => !pinnedUsers.has(msg.user_id));
+  // Remove pinned users from regular list (unless in pinned filter)
+  if (activeChannel !== 'pinned') {
+    filtered = filtered.filter(msg => !pinnedUsers.has(msg.user_id));
+  }
   
   const uniqueUsers = [...new Set(filtered.map(m => m.user_id))];
   
-  if (uniqueUsers.length > 0 || pinnedUsers.size === 0) {
+  if (uniqueUsers.length > 0) {
     const sectionHeader = document.createElement("div");
     sectionHeader.className = "section-header";
     sectionHeader.innerHTML = `
       <div class="section-title">
-        <span>All Conversations</span>
+        <span>${activeChannel === 'pinned' ? 'Pinned' : 'All'} Conversations</span>
         <span class="count-badge">${uniqueUsers.length}</span>
       </div>
     `;
@@ -136,7 +187,6 @@ function renderUserList() {
   const usersByDate = groupUsersByLastMessageDate(filtered);
   
   Object.keys(usersByDate).forEach(dateGroup => {
-    // Add date separator
     const dateDiv = document.createElement("div");
     dateDiv.className = "date-separator";
     dateDiv.innerHTML = `<span>${dateGroup}</span>`;
@@ -145,7 +195,7 @@ function renderUserList() {
     usersByDate[dateGroup].forEach(userId => {
       const userMessages = filtered.filter(m => m.user_id === userId);
       const last = userMessages[userMessages.length - 1];
-      renderUserItem(userId, last, userMessages, false);
+      renderUserItem(userId, last, userMessages, pinnedUsers.has(userId));
     });
   });
 
@@ -207,11 +257,8 @@ function renderUserItem(userId, lastMsg, userMessages, isPinned) {
         </div>
         
         <div class="chat-actions">
-          <button class="icon-btn pin-btn" onclick="togglePin('${userId}', event)">
+          <button class="icon-btn pin-btn" onclick="togglePin('${userId}', event)" title="${isPinned ? 'Unpin' : 'Pin'}">
             ${isPinned ? '<i class="fas fa-thumbtack"></i>' : '<i class="far fa-thumbtack"></i>'}
-          </button>
-          <button class="icon-btn" onclick="addNote('${userId}', event)">
-            <i class="far fa-sticky-note"></i>
           </button>
         </div>
       </div>
@@ -233,12 +280,14 @@ function renderUserItem(userId, lastMsg, userMessages, isPinned) {
 }
 
 function togglePin(userId, event) {
-  event.stopPropagation();
+  event?.stopPropagation();
   
   if (pinnedUsers.has(userId)) {
     pinnedUsers.delete(userId);
+    showToast('Unpinned conversation', 'success');
   } else {
     pinnedUsers.add(userId);
+    showToast('Pinned conversation', 'success');
   }
   
   savePersistentData();
@@ -250,10 +299,11 @@ function updateLeadStage(userId, stage) {
   savePersistentData();
   updateLeadStats();
   
+  const stageConfig = LEAD_STAGES.find(s => s.id === stage);
+  
   // Update in UI
   const item = document.querySelector(`.chat-item[data-user-id="${userId}"]`);
   if (item) {
-    const stageConfig = LEAD_STAGES.find(s => s.id === stage);
     const stageEl = item.querySelector('.lead-stage-indicator');
     if (stageEl) {
       stageEl.style.borderLeftColor = stageConfig.color;
@@ -263,14 +313,10 @@ function updateLeadStage(userId, stage) {
   
   // Update header if this is the current chat
   if (currentUser === userId) {
-    const stageLabel = LEAD_STAGES.find(s => s.id === stage).label;
-    document.getElementById('chatHeader').innerHTML = `
-      <span class="user-header">${userId}</span>
-      <span class="stage-badge" style="background: ${stageConfig.bg}; color: ${stageConfig.color}">
-        ${stageLabel}
-      </span>
-    `;
+    updateChatHeader(userId);
   }
+  
+  showToast(`Lead stage updated to ${stageConfig.label}`, 'success');
 }
 
 function updateLeadStats() {
@@ -302,21 +348,9 @@ function updateLeadStats() {
 }
 
 function filterByStage(stage) {
-  // Filter users by stage
-  const filteredUsers = Object.keys(leadStages).filter(userId => leadStages[userId] === stage);
-  
-  // Show only these users in the list
-  const list = document.getElementById("userList");
-  const items = list.querySelectorAll('.chat-item');
-  
-  items.forEach(item => {
-    const userId = item.getAttribute('data-user-id');
-    if (filteredUsers.includes(userId)) {
-      item.style.display = 'block';
-    } else {
-      item.style.display = 'none';
-    }
-  });
+  activeChannel = stage;
+  document.querySelectorAll(".filters button").forEach(b => b.classList.remove("active"));
+  renderUserList();
 }
 
 function filterMessages() {
@@ -324,7 +358,7 @@ function filterMessages() {
   
   if (activeChannel === "pinned") {
     filtered = filtered.filter(m => pinnedUsers.has(m.user_id));
-  } else if (activeChannel !== "all") {
+  } else if (activeChannel !== "all" && !LEAD_STAGES.map(s => s.id).includes(activeChannel)) {
     filtered = filtered.filter(m => m.channel === activeChannel);
   }
   
@@ -339,6 +373,11 @@ function filterMessages() {
       )
     );
     filtered = filtered.filter(m => matchingUserIds.includes(m.user_id));
+  }
+  
+  // Filter by lead stage if active
+  if (LEAD_STAGES.map(s => s.id).includes(activeChannel)) {
+    filtered = filtered.filter(m => leadStages[m.user_id] === activeChannel);
   }
   
   return filtered;
@@ -360,6 +399,11 @@ function openChat(userId, el) {
     }
   });
   
+  updateChatHeader(userId);
+  renderMessages();
+}
+
+function updateChatHeader(userId) {
   const stage = leadStages[userId] || 'new';
   const stageConfig = LEAD_STAGES.find(s => s.id === stage);
   
@@ -374,16 +418,14 @@ function openChat(userId, el) {
       </span>
     </div>
     <div class="header-actions">
-      <button class="icon-btn" onclick="togglePin('${userId}', event)">
+      <button class="icon-btn" onclick="togglePin('${userId}')" title="${pinnedUsers.has(userId) ? 'Unpin' : 'Pin'}">
         ${pinnedUsers.has(userId) ? '<i class="fas fa-thumbtack"></i>' : '<i class="far fa-thumbtack"></i>'}
       </button>
-      <button class="icon-btn" onclick="addNote('${userId}')">
+      <button class="icon-btn" onclick="addNote('${userId}')" title="Add note">
         <i class="far fa-sticky-note"></i>
       </button>
     </div>
   `;
-  
-  renderMessages();
 }
 
 function renderMessages() {
@@ -394,22 +436,17 @@ function renderMessages() {
   
   let messages = allMessages.filter(m => 
     m.user_id === currentUser &&
-    (activeChannel === "all" || activeChannel === "pinned" || m.channel === activeChannel)
+    (activeChannel === "all" || activeChannel === "pinned" || 
+     m.channel === activeChannel || leadStages[currentUser] === activeChannel)
   );
   
-  // Group by date
-  const messagesByDate = {};
-  messages.forEach(msg => {
-    const date = new Date(msg.timestamp).toLocaleDateString();
-    if (!messagesByDate[date]) messagesByDate[date] = [];
-    messagesByDate[date].push(msg);
-  });
-  
-  // Add lead info
+  // Add lead info card
   const leadInfo = document.createElement("div");
   leadInfo.className = "lead-info-card";
   const stage = leadStages[currentUser] || 'new';
   const stageConfig = LEAD_STAGES.find(s => s.id === stage);
+  const userMessages = allMessages.filter(m => m.user_id === currentUser);
+  const lastActive = userMessages.length > 0 ? userMessages[userMessages.length - 1].timestamp : new Date();
   
   leadInfo.innerHTML = `
     <div class="lead-status" style="border-left-color: ${stageConfig.color}">
@@ -423,13 +460,22 @@ function renderMessages() {
       </select>
     </div>
     <div class="lead-meta">
-      <span><i class="far fa-clock"></i> Last active: ${formatTimeAgo(new Date(messages[messages.length-1]?.timestamp))}</span>
-      <span><i class="far fa-comment"></i> ${messages.length} messages</span>
+      <span><i class="far fa-clock"></i> Last active: ${formatTimeAgo(new Date(lastActive))}</span>
+      <span><i class="far fa-comment"></i> ${userMessages.length} messages</span>
+      <span>${pinnedUsers.has(currentUser) ? '<i class="fas fa-thumbtack"></i> Pinned' : ''}</span>
     </div>
   `;
   box.appendChild(leadInfo);
   
-  // Render messages
+  // Group messages by date
+  const messagesByDate = {};
+  messages.forEach(msg => {
+    const date = new Date(msg.timestamp).toLocaleDateString();
+    if (!messagesByDate[date]) messagesByDate[date] = [];
+    messagesByDate[date].push(msg);
+  });
+  
+  // Render with date separators
   Object.keys(messagesByDate).forEach(date => {
     const dateSep = document.createElement("div");
     dateSep.className = "date-separator";
@@ -447,7 +493,7 @@ function renderMessages() {
       
       div.innerHTML = `
         <div class="message-header">
-          <span class="message-role">${m.role === 'user' ? 'Customer' : 'Agent'}</span>
+          <span class="message-role">${m.role === 'user' ? 'Customer' : 'Assistant'}</span>
           <span class="message-time">${time}</span>
           <span class="message-channel">${getChannelIcon(m.channel)}</span>
         </div>
@@ -471,10 +517,10 @@ function formatTimeAgo(date) {
   const diffDays = Math.floor(diffMs / 86400000);
   
   if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m`;
-  if (diffHours < 24) return `${diffHours}h`;
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
   if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d`;
+  if (diffDays < 7) return `${diffDays}d ago`;
   return date.toLocaleDateString();
 }
 
@@ -536,13 +582,13 @@ function escapeRegExp(string) {
 
 function getChannelIcon(channel) {
   const icons = {
-    whatsapp: 'fab fa-whatsapp',
-    telegram: 'fab fa-telegram',
-    web: 'fas fa-globe',
-    email: 'fas fa-envelope',
-    text: 'fas fa-sms'
+    whatsapp: '<i class="fab fa-whatsapp"></i>',
+    telegram: '<i class="fab fa-telegram"></i>',
+    web: '<i class="fas fa-globe"></i>',
+    email: '<i class="fas fa-envelope"></i>',
+    text: '<i class="fas fa-sms"></i>'
   };
-  return `<i class="${icons[channel] || 'fas fa-comment'}"></i>`;
+  return icons[channel] || '<i class="fas fa-comment"></i>';
 }
 
 function stringToColor(str) {
@@ -555,10 +601,16 @@ function stringToColor(str) {
 }
 
 function showToast(message, type = 'info') {
+  // Remove existing toasts
+  const existingToasts = document.querySelectorAll('.toast');
+  existingToasts.forEach(toast => toast.remove());
+  
   const toast = document.createElement('div');
   toast.className = `toast toast-${type}`;
+  const icon = type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle';
+  
   toast.innerHTML = `
-    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'}"></i>
+    <i class="fas fa-${icon}"></i>
     <span>${message}</span>
   `;
   
@@ -573,14 +625,36 @@ function showToast(message, type = 'info') {
   }, 10);
 }
 
-function addNote(userId, event) {
-  if (event) event.stopPropagation();
-  
+function showLoading(show) {
+  let loader = document.getElementById('loadingOverlay');
+  if (!loader && show) {
+    loader = document.createElement('div');
+    loader.id = 'loadingOverlay';
+    loader.className = 'loading-overlay';
+    loader.innerHTML = `
+      <div class="loading-spinner"></div>
+      <p>Loading conversations...</p>
+    `;
+    document.body.appendChild(loader);
+  } else if (loader && !show) {
+    loader.remove();
+  }
+}
+
+function addNote(userId) {
   const note = prompt('Add a note for this lead:');
   if (note) {
-    // In a real app, you would save this to your database
-    // For now, we'll just show a toast
-    showToast('Note added (demo - would save to database)', 'success');
+    // In a real app, save to database
+    // For now, store in localStorage
+    const notes = JSON.parse(localStorage.getItem('crm_notes') || '{}');
+    notes[userId] = note;
+    localStorage.setItem('crm_notes', JSON.stringify(notes));
+    
+    showToast('Note saved', 'success');
+    // Refresh messages to show note
+    if (currentUser === userId) {
+      renderMessages();
+    }
   }
 }
 
@@ -598,7 +672,6 @@ function toggleSidebar() {
       chatArea.classList.remove('hidden');
     }
   } else {
-    // Tablet/desktop toggle
     sidebar.classList.toggle('collapsed');
     chatArea.classList.toggle('expanded');
   }
@@ -607,11 +680,18 @@ function toggleSidebar() {
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
   // Search functionality
-  document.getElementById('searchInput')?.addEventListener('input', (e) => {
-    searchQuery = e.target.value;
-    renderUserList();
-    if (currentUser) renderMessages();
-  });
+  const searchInput = document.getElementById('searchInput');
+  if (searchInput) {
+    let searchTimeout;
+    searchInput.addEventListener('input', (e) => {
+      clearTimeout(searchTimeout);
+      searchTimeout = setTimeout(() => {
+        searchQuery = e.target.value;
+        renderUserList();
+        if (currentUser) renderMessages();
+      }, 300);
+    });
+  }
   
   // Channel filters
   document.querySelectorAll(".filters button").forEach(btn => {
@@ -636,14 +716,21 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mobile menu toggle
   document.getElementById('mobileMenuToggle')?.addEventListener('click', toggleSidebar);
   
-  // Initialize
+  // Load data
   loadData();
+  
+  // Auto-refresh every 30 seconds
+  setInterval(() => {
+    if (document.visibilityState === 'visible') {
+      loadData();
+    }
+  }, 30000);
   
   // Responsive adjustments
   window.addEventListener('resize', () => {
     if (window.innerWidth > 768) {
-      document.querySelector('.sidebar').classList.remove('hidden');
-      document.querySelector('.chat-area').classList.remove('hidden');
+      document.querySelector('.sidebar')?.classList.remove('hidden');
+      document.querySelector('.chat-area')?.classList.remove('hidden');
     }
   });
 });
