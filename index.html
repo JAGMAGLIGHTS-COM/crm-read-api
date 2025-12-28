@@ -1,110 +1,259 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>CRM Chat Dashboard</title>
-  <link rel="stylesheet" href="styles.css" />
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CRM Chat Dashboard</title>
+
+<style>
+/* ===============================
+   BRAND + TELEGRAM STYLE THEME
+================================ */
+:root {
+  --bg: #FFFFFB;
+  --text: #252525;
+  --border: #FFC145;
+  --primary: #FFDF00;
+  --secondary: #0D67B1;
+  --accent: #557054;
+  --danger: #C94271;
+  --shadow: 0 6px 20px #E9D7582E;
+}
+
+* {
+  box-sizing: border-box;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+}
+
+.app {
+  display: flex;
+  height: 100vh;
+}
+
+/* SIDEBAR */
+.sidebar {
+  width: 32%;
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+}
+
+.sidebar-top {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-top h1 {
+  margin: 0 0 10px;
+  font-size: 20px;
+}
+
+.filters button {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  padding: 6px 10px;
+  margin-right: 6px;
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.filters button.active {
+  background: var(--primary);
+  border-color: var(--accent);
+}
+
+.chat-list {
+  overflow-y: auto;
+}
+
+.chat-item {
+  padding: 14px;
+  border-bottom: 1px solid #eee;
+  cursor: pointer;
+}
+
+.chat-item:hover {
+  background: #FFF8E1;
+}
+
+.chat-item.active {
+  background: #FFF3B0;
+  border-left: 4px solid var(--primary);
+}
+
+.chat-item .user {
+  font-weight: 600;
+}
+
+.chat-item .meta {
+  font-size: 12px;
+  opacity: 0.7;
+}
+
+/* CHAT */
+.chat-area {
+  width: 68%;
+  display: flex;
+  flex-direction: column;
+}
+
+.chat-header {
+  padding: 16px;
+  border-bottom: 1px solid var(--border);
+  font-weight: 600;
+}
+
+.messages {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  background: linear-gradient(#FFFFFB, #f6f6f6);
+}
+
+/* MESSAGE BUBBLES */
+.message {
+  max-width: 70%;
+  padding: 10px 14px;
+  margin-bottom: 12px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  white-space: pre-wrap;
+}
+
+.message.user {
+  background: #FFFFFF;
+  border: 1px solid var(--border);
+  align-self: flex-start;
+}
+
+.message.ai {
+  background: var(--primary);
+  border: 1px solid var(--accent);
+  align-self: flex-end;
+}
+</style>
 </head>
+
 <body>
 
-<!-- Mobile Header -->
-<div class="mobile-header">
-  <button class="btn-menu" id="mobileMenuToggle">
-    <i class="fas fa-bars"></i>
-  </button>
-  <h1>CRM Chat</h1>
-  <button class="btn-menu" onclick="loadData()" title="Refresh">
-    <i class="fas fa-sync-alt"></i>
-  </button>
-</div>
-
 <div class="app">
-  
-  <!-- SIDEBAR -->
+
   <aside class="sidebar">
     <div class="sidebar-top">
-      <h1>
-        <i class="fas fa-comments"></i>
-        <span>CRM Chat Dashboard</span>
-      </h1>
-      
-      <!-- Search Bar -->
-      <div class="search-container">
-        <i class="fas fa-search"></i>
-        <input 
-          type="text" 
-          id="searchInput" 
-          placeholder="Search conversations..." 
-          autocomplete="off"
-        />
-      </div>
-      
-      <!-- Lead Funnel -->
-      <div class="lead-funnel" id="leadFunnel">
-        <!-- Dynamically populated -->
-      </div>
-      
-      <!-- Filters -->
+      <h1>CRM</h1>
       <div class="filters">
-        <button class="active" data-channel="all">
-          <i class="fas fa-layer-group"></i>
-          <span>All</span>
-        </button>
-        <button data-channel="pinned">
-          <i class="fas fa-thumbtack"></i>
-          <span>Pinned</span>
-        </button>
-        <button data-channel="whatsapp">
-          <i class="fab fa-whatsapp"></i>
-          <span>WhatsApp</span>
-        </button>
-        <button data-channel="telegram">
-          <i class="fab fa-telegram"></i>
-          <span>Telegram</span>
-        </button>
-        <button data-channel="web">
-          <i class="fas fa-globe"></i>
-          <span>Web</span>
-        </button>
+        <button class="active" data-channel="all">All</button>
+        <button data-channel="web">Web</button>
+        <button data-channel="whatsapp">WhatsApp</button>
       </div>
     </div>
-
     <div id="userList" class="chat-list"></div>
   </aside>
 
-  <!-- CHAT AREA -->
   <main class="chat-area">
-    <header class="chat-header" id="chatHeader">
-      <!-- Dynamically populated -->
-    </header>
-
-    <section id="messages" class="messages"></section>
-    
-    <!-- Quick Actions -->
-    <div class="quick-actions">
-      <select id="quickStage" onchange="if(currentUser) updateLeadStage(currentUser, this.value)">
-        <option value="">Update lead stage...</option>
-        <option value="new">👋 New Lead</option>
-        <option value="contacted">📞 Contacted</option>
-        <option value="qualified">✅ Qualified</option>
-        <option value="proposal">📄 Proposal</option>
-        <option value="negotiation">🤝 Negotiation</option>
-        <option value="won">🏆 Won</option>
-        <option value="lost">❌ Lost</option>
-      </select>
-      <button class="btn-primary" onclick="addNote(currentUser)">
-        <i class="fas fa-sticky-note"></i>
-        <span class="btn-text">Add Note</span>
-      </button>
-    </div>
+    <div id="chatHeader" class="chat-header">Select a conversation</div>
+    <div id="messages" class="messages"></div>
   </main>
 
 </div>
 
-<!-- Import Supabase from CDN -->
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
-<script src="app.js"></script>
+<script>
+/* ===============================
+   CRM LOGIC (READ ONLY)
+================================ */
+
+const API_URL = "/api/conversations";
+
+let allMessages = [];
+let currentUser = null;
+let activeChannel = "all";
+
+async function loadData() {
+  const res = await fetch(API_URL);
+  allMessages = await res.json();
+  renderUserList();
+}
+
+function renderUserList() {
+  const list = document.getElementById("userList");
+  list.innerHTML = "";
+
+  const filtered =
+    activeChannel === "all"
+      ? allMessages
+      : allMessages.filter(m => m.channel === activeChannel);
+
+  const users = [...new Set(filtered.map(m => m.user_id))];
+
+  users.forEach(userId => {
+    const last = filtered.filter(m => m.user_id === userId).slice(-1)[0];
+
+    const div = document.createElement("div");
+    div.className = "chat-item";
+    div.innerHTML = `
+      <div class="user">${userId}</div>
+      <div class="meta">${last.channel}</div>
+    `;
+
+    div.onclick = () => openChat(userId, div);
+    list.appendChild(div);
+  });
+}
+
+function openChat(userId, el) {
+  currentUser = userId;
+
+  document.querySelectorAll(".chat-item")
+    .forEach(i => i.classList.remove("active"));
+  el.classList.add("active");
+
+  document.getElementById("chatHeader").innerText = userId;
+  renderMessages();
+}
+
+function renderMessages() {
+  const box = document.getElementById("messages");
+  box.innerHTML = "";
+
+  allMessages
+    .filter(
+      m =>
+        m.user_id === currentUser &&
+        (activeChannel === "all" || m.channel === activeChannel)
+    )
+    .forEach(m => {
+      const div = document.createElement("div");
+      div.className = "message " + m.role;
+      div.innerText = m.message;
+      box.appendChild(div);
+    });
+
+  box.scrollTop = box.scrollHeight;
+}
+
+document.querySelectorAll(".filters button").forEach(btn => {
+  btn.onclick = () => {
+    document.querySelectorAll(".filters button")
+      .forEach(b => b.classList.remove("active"));
+    btn.classList.add("active");
+    activeChannel = btn.dataset.channel;
+
+    currentUser = null;
+    document.getElementById("chatHeader").innerText = "Select a conversation";
+    document.getElementById("messages").innerHTML = "";
+
+    renderUserList();
+  };
+});
+
+loadData();
+</script>
+
 </body>
 </html>
