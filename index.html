@@ -185,10 +185,12 @@
             cursor: pointer;
             padding: 4px;
             border-radius: 4px;
+            transition: all 0.2s;
         }
 
         .menu-btn:hover {
             background: var(--bg-tertiary);
+            color: var(--gold);
         }
 
         /* Search Bar */
@@ -255,8 +257,7 @@
             border-color: var(--gold);
         }
 
-        
-        /* User List */
+        /* User List - Improved for more space */
         .user-list {
             flex: 1;
             overflow-y: auto;
@@ -990,10 +991,6 @@
                 padding: 20px;
                 margin: 20px;
             }
-
-            .quick-stats {
-                grid-template-columns: repeat(2, 1fr);
-            }
         }
 
         /* Scrollbar */
@@ -1078,10 +1075,10 @@
                         CRM Conversations
                     </span>
                     <div>
-                        <button class="menu-btn" onclick="loadData()" title="Refresh">
+                        <button class="menu-btn" onclick="loadData()" title="Refresh" style="color: var(--gold);">
                             <i class="fas fa-sync-alt"></i>
                         </button>
-                        <button class="menu-btn" onclick="logout()" title="Logout">
+                        <button class="menu-btn" onclick="logout()" title="Logout" style="color: var(--gold);">
                             <i class="fas fa-sign-out-alt"></i>
                         </button>
                     </div>
@@ -1111,26 +1108,6 @@
                         <i class="fas fa-globe"></i>
                         <span>Web</span>
                     </button>
-                </div>
-                
-                <!-- Quick Stats -->
-                <div class="quick-stats">
-                    <div class="stat-box" onclick="toggleStatsPanel()">
-                        <div class="stat-value" id="totalUsers">0</div>
-                        <div class="stat-label">Total Users</div>
-                    </div>
-                    <div class="stat-box" onclick="toggleStatsPanel()">
-                        <div class="stat-value" id="totalMessages">0</div>
-                        <div class="stat-label">Messages</div>
-                    </div>
-                    <div class="stat-box" onclick="toggleStatsPanel()">
-                        <div class="stat-value" id="pinnedCount">0</div>
-                        <div class="stat-label">Pinned</div>
-                    </div>
-                    <div class="stat-box" onclick="toggleStatsPanel()">
-                        <div class="stat-value" id="activeToday">0</div>
-                        <div class="stat-label">Active Today</div>
-                    </div>
                 </div>
             </div>
 
@@ -1582,29 +1559,7 @@ function saveLocalData() {
 
 /* ====== STATS FUNCTIONS ====== */
 function updateAllStats() {
-    updateQuickStats();
     updateStatsPanel();
-}
-
-function updateQuickStats() {
-    const uniqueUsers = [...new Set(allMessages.map(m => m.user_id))];
-    const totalMessages = allMessages.length;
-    const pinnedCount = pinnedUsers.size;
-    
-    // Count active today
-    const today = new Date();
-    const activeToday = uniqueUsers.filter(userId => {
-        const userMessages = allMessages.filter(m => m.user_id === userId);
-        const lastMsg = userMessages[userMessages.length - 1];
-        const msgDate = new Date(lastMsg.created_at || lastMsg.timestamp);
-        return msgDate.toDateString() === today.toDateString();
-    }).length;
-    
-    // Update UI
-    document.getElementById("totalUsers").textContent = uniqueUsers.length;
-    document.getElementById("totalMessages").textContent = totalMessages;
-    document.getElementById("pinnedCount").textContent = pinnedCount;
-    document.getElementById("activeToday").textContent = activeToday;
 }
 
 /* ====== USER LIST RENDERING ====== */
