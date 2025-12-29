@@ -1278,12 +1278,14 @@
                 font-size: 13px;
             }
 
-            /* Stats panel for mobile */
+            /* Stats panel for mobile - OPTIMIZED */
             .stats-panel {
                 padding: 16px;
                 gap: 16px;
                 display: flex !important;
                 flex-direction: column;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
             }
 
             .stats-grid {
@@ -1294,6 +1296,7 @@
 
             .stats-card {
                 padding: 16px;
+                margin-bottom: 0;
             }
 
             .stats-card h3 {
@@ -1309,6 +1312,7 @@
 
             .stat-item {
                 padding: 10px;
+                margin-bottom: 0;
             }
 
             .stat-label {
@@ -1334,6 +1338,11 @@
 
             .stage-count {
                 font-size: 18px;
+            }
+
+            /* Stats panel specific mobile optimizations */
+            .stats-card[style*="grid-column: span 2"] {
+                grid-column: 1 !important;
             }
 
             /* Analytics page for mobile */
@@ -1857,8 +1866,42 @@ function togglePinCurrentChat() {
     }
 }
 
-/* ====== STATS PANEL FUNCTIONS ====== */
+/* ====== STATS PANEL FUNCTIONS - FIXED FOR MOBILE ====== */
 function toggleStatsPanel() {
+    // If we're on mobile and the chat area is hidden (we're in sidebar view),
+    // we need to switch to chat area first
+    if (window.innerWidth <= 768) {
+        const sidebar = document.querySelector(".sidebar");
+        const chatArea = document.querySelector(".chat-area");
+        
+        // If sidebar is visible and chat area is hidden, switch to chat area
+        if (sidebar && !sidebar.classList.contains("hidden") && 
+            chatArea && chatArea.classList.contains("hidden")) {
+            sidebar.classList.add("hidden");
+            chatArea.classList.remove("hidden");
+            
+            // Update mobile title to show we're in stats view
+            document.getElementById("mobileTitle").textContent = "Statistics";
+            
+            // Set currentUser to null so we show the stats without a chat
+            const previousUser = currentUser;
+            currentUser = null;
+            
+            // Clear chat header
+            document.getElementById("chatHeader").textContent = "Statistics";
+            document.getElementById("leadStageBadge").innerHTML = '<span>System Overview</span>';
+            
+            // Ensure messages container is empty
+            document.getElementById("messages").innerHTML = `
+                <div class="empty-state" style="padding: 40px 20px;">
+                    <i class="fas fa-chart-bar"></i>
+                    <h3>Statistics Overview</h3>
+                    <p>Viewing system-wide analytics</p>
+                </div>
+            `;
+        }
+    }
+    
     statsPanelVisible = !statsPanelVisible;
     const messagesContainer = document.getElementById("messages");
     const statsPanel = document.getElementById("statsPanel");
@@ -1869,12 +1912,6 @@ function toggleStatsPanel() {
         leadStageSelector.classList.add("hidden");
         statsPanel.classList.remove("hidden");
         updateStatsPanel();
-        
-        // Ensure stats panel is visible on mobile
-        if (window.innerWidth <= 768) {
-            statsPanel.style.display = "flex";
-            statsPanel.style.flexDirection = "column";
-        }
     } else {
         messagesContainer.classList.remove("hidden");
         leadStageSelector.classList.remove("hidden");
@@ -2718,17 +2755,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const messagesContainer = document.querySelector('.messages-container');
             if (messagesContainer) {
                 messagesContainer.style.overflowX = 'hidden';
-            }
-        }
-    });
-    
-    // Fix for mobile view stats button
-    document.addEventListener('click', function(e) {
-        if (window.innerWidth <= 768) {
-            // Check if stats button was clicked in mobile header
-            const mobileStatsBtn = document.querySelector('.mobile-actions .stats-btn');
-            if (mobileStatsBtn && (e.target === mobileStatsBtn || mobileStatsBtn.contains(e.target))) {
-                toggleStatsPanel();
             }
         }
     });
