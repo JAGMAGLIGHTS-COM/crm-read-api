@@ -283,17 +283,33 @@
         /* Filters */
         .filters {
             display: flex;
-            gap: 8px;
-            overflow-x: auto;
-            padding-bottom: 4px;
+            flex-wrap: wrap;
+            gap: 6px;
+            overflow-y: auto;
+            max-height: 150px;
+            padding-right: 5px;
+            margin-bottom: 10px;
+        }
+
+        .filters::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .filters::-webkit-scrollbar-track {
+            background: var(--bg-tertiary);
+        }
+
+        .filters::-webkit-scrollbar-thumb {
+            background: var(--border);
+            border-radius: 4px;
         }
 
         .filter-btn {
             background: var(--bg-secondary);
             border: 1px solid var(--border);
-            padding: 8px 16px;
+            padding: 6px 12px;
             border-radius: 20px;
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 500;
             color: var(--text-secondary);
             cursor: pointer;
@@ -301,7 +317,8 @@
             transition: all 0.2s;
             display: flex;
             align-items: center;
-            gap: 6px;
+            gap: 4px;
+            height: 28px;
         }
 
         .filter-btn:hover {
@@ -693,7 +710,7 @@
             display: inline-block;
         }
 
-        /* Message Bubbles */
+        /* Messages Container */
         .messages-container {
             flex: 1;
             overflow-y: auto;
@@ -1119,6 +1136,129 @@
             text-align: center;
         }
 
+        /* ====== NOTES MODAL ====== */
+        .notes-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+            padding: 20px;
+        }
+
+        .notes-modal-content {
+            background: var(--bg-primary);
+            border-radius: var(--radius);
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            max-width: 500px;
+            max-height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .notes-modal-header {
+            padding: 20px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .notes-modal-header h3 {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .close-notes-btn {
+            background: none;
+            border: none;
+            font-size: 24px;
+            color: var(--text-tertiary);
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .close-notes-btn:hover {
+            color: var(--danger);
+            background: var(--bg-tertiary);
+        }
+
+        .notes-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .note-item {
+            padding: 16px;
+            background: var(--bg-secondary);
+            border-radius: var(--radius-sm);
+            border-left: 4px solid var(--gold);
+        }
+
+        .note-text {
+            font-size: 14px;
+            line-height: 1.6;
+            color: var(--text-primary);
+            margin-bottom: 8px;
+        }
+
+        .note-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: var(--text-tertiary);
+        }
+
+        .note-time {
+            font-style: italic;
+        }
+
+        .notes-input-area {
+            padding: 20px;
+            border-top: 1px solid var(--border);
+            background: var(--bg-primary);
+        }
+
+        .notes-textarea {
+            width: 100%;
+            min-height: 100px;
+            padding: 12px;
+            border: 1px solid var(--border);
+            border-radius: var(--radius-sm);
+            font-size: 14px;
+            line-height: 1.5;
+            color: var(--text-primary);
+            background: var(--bg-secondary);
+            resize: vertical;
+            margin-bottom: 12px;
+        }
+
+        .notes-textarea:focus {
+            outline: none;
+            border-color: var(--gold);
+            box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.1);
+        }
+
+        .notes-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+        }
+
         /* ====== RESPONSIVE DESIGN ====== */
         @media (max-width: 1024px) {
             .sidebar {
@@ -1362,6 +1502,27 @@
                 top: 56px;
             }
 
+            /* Notes modal for mobile */
+            .notes-modal {
+                padding: 10px;
+            }
+
+            .notes-modal-content {
+                max-height: 90vh;
+            }
+
+            .notes-modal-header {
+                padding: 16px;
+            }
+
+            .notes-list {
+                padding: 16px;
+            }
+
+            .notes-input-area {
+                padding: 16px;
+            }
+
             /* Prevent horizontal scrolling */
             .stats-panel,
             .analytics-content {
@@ -1390,8 +1551,8 @@
             }
             
             .filter-btn {
-                padding: 6px 12px;
-                font-size: 12px;
+                padding: 6px 10px;
+                font-size: 11px;
             }
             
             .login-container {
@@ -1593,6 +1754,35 @@
                         <i class="fas fa-globe"></i>
                         <span>Web</span>
                     </button>
+                    <!-- Lead Stage Filters -->
+                    <button class="filter-btn" data-filter="stage_new">
+                        <i class="fas fa-user-plus"></i>
+                        <span>New Lead</span>
+                    </button>
+                    <button class="filter-btn" data-filter="stage_contacted">
+                        <i class="fas fa-phone"></i>
+                        <span>Contacted</span>
+                    </button>
+                    <button class="filter-btn" data-filter="stage_qualified">
+                        <i class="fas fa-check"></i>
+                        <span>Qualified</span>
+                    </button>
+                    <button class="filter-btn" data-filter="stage_proposal">
+                        <i class="fas fa-file-alt"></i>
+                        <span>Proposal</span>
+                    </button>
+                    <button class="filter-btn" data-filter="stage_negotiation">
+                        <i class="fas fa-handshake"></i>
+                        <span>Negotiation</span>
+                    </button>
+                    <button class="filter-btn" data-filter="stage_won">
+                        <i class="fas fa-trophy"></i>
+                        <span>Won</span>
+                    </button>
+                    <button class="filter-btn" data-filter="stage_lost">
+                        <i class="fas fa-times"></i>
+                        <span>Lost</span>
+                    </button>
                 </div>
             </div>
 
@@ -1605,7 +1795,7 @@
             <!-- Updated Chat Header with Two Rows -->
             <header class="chat-header">
                 <div class="chat-header-top">
-                    <button class="back-btn" onclick="toggleSidebar()">
+                    <button class="back-btn" onclick="goBack()">
                         <i class="fas fa-chevron-left"></i>
                     </button>
                     <div class="chat-user-name" id="chatHeader">Select a conversation</div>
@@ -1750,10 +1940,12 @@ let allMessages = [];
 let currentUser = null;
 let pinnedUsers = new Set();
 let leadStages = {};
+let leadNotes = {};
 let activeFilter = "all";
 let searchQuery = "";
 let sidebarVisible = true;
 let statsPanelVisible = false;
+let previousView = null; // To track previous view for back button
 
 // Lead stages with colors
 const LEAD_STAGES = {
@@ -1812,6 +2004,32 @@ function showPage(pageId) {
 
 function logout() {
     showPage("loginPage");
+}
+
+/* ====== NEW FUNCTION: GO BACK ====== */
+function goBack() {
+    // If stats panel is open, close it
+    if (statsPanelVisible) {
+        toggleStatsPanel();
+        return;
+    }
+    
+    // If on mobile and in chat view, go back to sidebar
+    if (window.innerWidth <= 768) {
+        const sidebar = document.querySelector(".sidebar");
+        const chatArea = document.querySelector(".chat-area");
+        
+        if (chatArea && !chatArea.classList.contains("hidden")) {
+            // Go back to sidebar
+            sidebar.classList.remove("hidden");
+            chatArea.classList.add("hidden");
+            document.getElementById("mobileTitle").textContent = "CRM Conversations";
+            return;
+        }
+    }
+    
+    // Default: toggle sidebar on desktop
+    toggleSidebar();
 }
 
 /* ====== NEW FUNCTIONS ====== */
@@ -2135,6 +2353,7 @@ function loadLocalData() {
     try {
         const savedPinned = localStorage.getItem('crm_pinnedUsers');
         const savedStages = localStorage.getItem('crm_leadStages');
+        const savedNotes = localStorage.getItem('crm_leadNotes');
         
         if (savedPinned) {
             pinnedUsers = new Set(JSON.parse(savedPinned));
@@ -2143,8 +2362,15 @@ function loadLocalData() {
         if (savedStages) {
             leadStages = JSON.parse(savedStages);
         }
+        
+        if (savedNotes) {
+            leadNotes = JSON.parse(savedNotes);
+        } else {
+            leadNotes = {};
+        }
     } catch (e) {
         console.warn("Failed to load local data:", e);
+        leadNotes = {};
     }
 }
 
@@ -2152,6 +2378,7 @@ function saveLocalData() {
     try {
         localStorage.setItem('crm_pinnedUsers', JSON.stringify([...pinnedUsers]));
         localStorage.setItem('crm_leadStages', JSON.stringify(leadStages));
+        localStorage.setItem('crm_leadNotes', JSON.stringify(leadNotes));
     } catch (e) {
         console.warn("Failed to save local data:", e);
     }
@@ -2336,6 +2563,13 @@ function shouldShowUser(userId, messages) {
         return false;
     }
     
+    // Filter by lead stage
+    if (activeFilter.startsWith("stage_")) {
+        const stage = activeFilter.replace("stage_", "");
+        const userStage = leadStages[userId] || "new";
+        if (userStage !== stage) return false;
+    }
+    
     return true;
 }
 
@@ -2496,14 +2730,109 @@ function updateLeadStage(userId, stage) {
     }
 }
 
+/* ====== NEW NOTES FUNCTIONALITY ====== */
 function addNote() {
-    if (!currentUser) return;
-    
-    const note = prompt("Add a note for this lead:");
-    if (note) {
-        // In a real app, you would save this note to your backend
-        showToast("Note added successfully", "success");
+    if (!currentUser) {
+        showToast("Please select a conversation first", "error");
+        return;
     }
+    
+    // Create modal
+    const modal = document.createElement('div');
+    modal.className = 'notes-modal';
+    modal.innerHTML = `
+        <div class="notes-modal-content">
+            <div class="notes-modal-header">
+                <h3>Notes for ${currentUser}</h3>
+                <button class="close-notes-btn" onclick="this.closest('.notes-modal').remove()">&times;</button>
+            </div>
+            <div class="notes-list" id="notesList">
+                ${renderNotesList()}
+            </div>
+            <div class="notes-input-area">
+                <textarea class="notes-textarea" id="newNoteText" placeholder="Add a new note..."></textarea>
+                <div class="notes-actions">
+                    <button class="filter-btn" onclick="this.closest('.notes-modal').remove()">Cancel</button>
+                    <button class="gold-btn" onclick="saveNewNote()">
+                        <i class="fas fa-save"></i>
+                        <span>Save Note</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Focus on textarea
+    setTimeout(() => {
+        document.getElementById('newNoteText').focus();
+    }, 100);
+}
+
+function renderNotesList() {
+    if (!currentUser || !leadNotes[currentUser] || leadNotes[currentUser].length === 0) {
+        return '<div class="note-item"><div class="note-text">No notes yet. Add your first note below.</div></div>';
+    }
+    
+    return leadNotes[currentUser].map((note, index) => {
+        const date = new Date(note.timestamp);
+        const formattedDate = date.toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'short', 
+            day: 'numeric' 
+        });
+        const formattedTime = date.toLocaleTimeString('en-US', { 
+            hour: '2-digit', 
+            minute: '2-digit' 
+        });
+        
+        return `
+            <div class="note-item">
+                <div class="note-text">${note.text}</div>
+                <div class="note-meta">
+                    <span class="note-time">${formattedDate} at ${formattedTime}</span>
+                    <span class="note-index">#${leadNotes[currentUser].length - index}</span>
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+function saveNewNote() {
+    const textarea = document.getElementById('newNoteText');
+    const noteText = textarea.value.trim();
+    
+    if (!noteText) {
+        showToast("Please enter a note", "error");
+        return;
+    }
+    
+    // Initialize notes array for this user if needed
+    if (!leadNotes[currentUser]) {
+        leadNotes[currentUser] = [];
+    }
+    
+    // Add new note
+    leadNotes[currentUser].push({
+        text: noteText,
+        timestamp: new Date().toISOString()
+    });
+    
+    // Save to local storage
+    saveLocalData();
+    
+    // Update notes list in modal
+    document.getElementById('notesList').innerHTML = renderNotesList();
+    
+    // Clear textarea
+    textarea.value = '';
+    
+    // Show success message
+    showToast("Note saved successfully", "success");
+    
+    // Refocus on textarea
+    textarea.focus();
 }
 
 /* ====== ANALYTICS FUNCTIONS ====== */
