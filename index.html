@@ -479,8 +479,9 @@
         .chat-header-top {
             display: flex;
             align-items: center;
-            gap: 12px;
+            justify-content: space-between;
             width: 100%;
+            min-height: 40px;
         }
 
         .chat-header-bottom {
@@ -500,12 +501,7 @@
             overflow: hidden;
             text-overflow: ellipsis;
             flex: 1;
-        }
-
-        .chat-header-actions {
-            display: flex;
-            gap: 8px;
-            flex-shrink: 0;
+            text-align: left;
         }
 
         .lead-stage-display {
@@ -559,39 +555,19 @@
             transform: scale(1.05);
         }
 
-        .action-btn {
-            width: 40px;
-            height: 40px;
-            border: 1px solid var(--border);
-            background: var(--bg-primary);
-            border-radius: 10px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            color: var(--text-secondary);
-            transition: all 0.2s;
-        }
-
-        .action-btn:hover {
-            background: var(--bg-tertiary);
-            border-color: var(--gold);
-            color: var(--gold);
-        }
-
-        .action-btn.pin-btn {
+        .icon-btn.pin-btn {
             background: var(--bg-secondary);
             color: var(--text-secondary);
             border: 1px solid var(--border);
         }
 
-        .action-btn.pin-btn.active {
+        .icon-btn.pin-btn.active {
             background: var(--gold-light);
             color: var(--gold);
             border-color: var(--gold);
         }
 
-        .action-btn.pin-btn:hover {
+        .icon-btn.pin-btn:hover {
             background: var(--gold-light);
             color: var(--gold);
         }
@@ -609,6 +585,7 @@
             border-radius: 8px;
             min-width: 40px;
             min-height: 40px;
+            margin-right: 8px;
         }
 
         .back-btn:hover {
@@ -619,7 +596,7 @@
             background: var(--gold);
             color: var(--text-primary);
             border: none;
-            padding: 10px 16px;
+            padding: 8px 16px;
             border-radius: var(--radius);
             font-weight: 600;
             cursor: pointer;
@@ -919,7 +896,7 @@
         }
 
         .mobile-header .stats-btn span {
-            display: inline;
+            display: none;
         }
 
         /* ====== ANALYTICS PAGE ====== */
@@ -1436,10 +1413,6 @@
                 font-size: 12px;
                 min-height: 36px;
             }
-            
-            .mobile-header .stats-btn span {
-                display: none;
-            }
         }
 
         /* Scrollbar */
@@ -1546,7 +1519,6 @@
         <div class="mobile-actions">
             <button class="stats-btn" onclick="toggleStatsPanel()">
                 <i class="fas fa-chart-bar"></i>
-                <span>Stats</span>
             </button>
         </div>
     </div>
@@ -1628,20 +1600,15 @@
                         <i class="fas fa-chevron-left"></i>
                     </button>
                     <div class="chat-user-name" id="chatHeader">Select a conversation</div>
-                    <div class="chat-header-actions">
-                        <button class="action-btn pin-btn" onclick="togglePinCurrentChat()" title="Pin this chat">
-                            <i class="fas fa-thumbtack"></i>
-                        </button>
-                        <button class="action-btn stats-btn" onclick="toggleStatsPanel()" title="View Stats">
-                            <i class="fas fa-chart-bar"></i>
-                        </button>
-                    </div>
                 </div>
                 <div class="chat-header-bottom">
                     <div class="lead-stage-display" id="leadStageBadge">
                         <span>No lead stage</span>
                     </div>
                     <div class="header-action-icons">
+                        <button class="icon-btn pin-btn" onclick="togglePinCurrentChat()" title="Pin this chat">
+                            <i class="fas fa-thumbtack"></i>
+                        </button>
                         <button class="icon-btn call-btn" onclick="callCurrentContact()" title="Call">
                             <i class="fas fa-phone"></i>
                         </button>
@@ -1707,10 +1674,6 @@
                 <button class="gold-btn" onclick="addNote()">
                     <i class="fas fa-sticky-note"></i>
                     <span>Add Note</span>
-                </button>
-                <button class="gold-btn" onclick="markAsWon()">
-                    <i class="fas fa-trophy"></i>
-                    <span>Mark Won</span>
                 </button>
             </div>
         </main>
@@ -2506,13 +2469,6 @@ function addNote() {
     }
 }
 
-function markAsWon() {
-    if (!currentUser) return;
-    
-    updateLeadStage(currentUser, "won");
-    showToast("Lead marked as won!", "success");
-}
-
 /* ====== ANALYTICS FUNCTIONS ====== */
 function updateAnalytics() {
     updateAnalyticsLeadFunnel();
@@ -2770,10 +2726,17 @@ document.addEventListener("DOMContentLoaded", () => {
     document.addEventListener('click', function(e) {
         if (window.innerWidth <= 768) {
             // Check if stats button was clicked in mobile header
-            if (e.target.closest('.mobile-actions .stats-btn') || 
-                e.target.closest('.mobile-actions .stats-btn i')) {
+            const mobileStatsBtn = document.querySelector('.mobile-actions .stats-btn');
+            if (mobileStatsBtn && (e.target === mobileStatsBtn || mobileStatsBtn.contains(e.target))) {
                 toggleStatsPanel();
             }
+        }
+    });
+    
+    // Initialize with Enter key on password field
+    document.getElementById("passwordInput").addEventListener("keypress", function(e) {
+        if (e.key === "Enter") {
+            checkPassword();
         }
     });
     
