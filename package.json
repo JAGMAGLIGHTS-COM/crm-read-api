@@ -4,5 +4,9 @@
   "private": true,
   "dependencies": {
     "@supabase/supabase-js": "^2.39.5"
+  },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
   }
 }
