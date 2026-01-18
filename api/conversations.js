@@ -1,57 +1,87 @@
 import { createClient } from "@supabase/supabase-js";
-import { requireAuth } from "./_auth.js";
 
 /**
+ * Simple conversations endpoint (no complex auth)
  * GET /api/conversations
- * Auth: Bearer <token>
- *
- * Query:
- *  - since: ISO timestamp (exclusive): created_at > since (returns ascending)
- *  - limit: number (default 500, max 2000)
- *
- * Returns:
- *  { rows: [...], cursor: { newestCreatedAt } }
  */
 export default async function handler(req, res) {
-  if (req.method !== "GET") {
-    res.setHeader("Allow", "GET");
-    res.setHeader("Cache-Control", "no-store");
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+    if (req.method !== 'GET') {
+        res.setHeader('Allow', ['GET']);
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
 
-  const auth = requireAuth(req, res);
-  if (!auth) return;
+    try {
+        // Get Supabase credentials
+        const supabaseUrl = process.env.SUPABASE_URL;
+        const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+        
+        if (!supabaseUrl || !supabaseKey) {
+            console.error('Missing Supabase credentials');
+            return res.status(500).json({ 
+                error: 'Database configuration missing',
+                rows: [] 
+            });
+        }
 
-  if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-    res.setHeader("Cache-Control", "no-store");
-    return res.status(500).json({ error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" });
-  }
+        const supabase = createClient(supabaseUrl, supabaseKey);
 
-  const url = new URL(req.url, `http://${req.headers.host}`);
-  const since = url.searchParams.get("since");
-  const rawLimit = Number(url.searchParams.get("limit") || 500);
-  const limit = Math.min(Math.max(rawLimit, 1), 2000);
+        // Parse query parameters
+        const url = new URL(req.url, `http://${req.headers.host}`);
+        const since = url.searchParams.get('since');
+        const limit = parseInt(url.searchParams.get('limit') || '1000');
+        const userId = url.searchParams.get('user_id');
+        const channel = url.searchParams.get('channel');
+        const order = url.searchParams.get('order') || 'desc';
 
-  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_ROLE_KEY);
+        // Build query
+        let query = supabase
+            .from('conversations')
+            .select('memory_id, channel, user_id, role, message, intent, conversation_state, entities, is_priority, needs_human, created_at')
+            .order('created_at', { ascending: order === 'asc' })
+            .limit(Math.min(limit, 2000));
 
-  let q = supabase
-    .from("conversations")
-    .select("memory_id, channel, user_id, role, message, intent, conversation_state, entities, is_priority, needs_human, created_at");
+        if (since) {
+            query = query.gt('created_at', since);
+        }
+        if (userId) {
+            query = query.eq('user_id', userId);
+        }
+        if (channel) {
+            query = query.eq('channel', channel);
+        }
 
-  if (since) q = q.gt("created_at", since);
+        const { data, error } = await query;
 
-  // When doing delta fetch (since), best to return ascending order for easy append
-  q = q.order("created_at", { ascending: !!since }).limit(limit);
+        if (error) {
+            console.error('Supabase error:', error);
+            return res.status(500).json({ 
+                error: error.message,
+                rows: [] 
+            });
+        }
 
-  const { data, error } = await q;
-  if (error) {
-    res.setHeader("Cache-Control", "no-store");
-    return res.status(500).json({ error: error.message });
-  }
+        const rows = data || [];
+        
+        // Get newest timestamp for cursor
+        let newestCreatedAt = null;
+        if (rows.length > 0) {
+            const timestamps = rows.map(row => new Date(row.created_at).getTime());
+            const newestIndex = timestamps.indexOf(Math.max(...timestamps));
+            newestCreatedAt = rows[newestIndex].created_at;
+        }
 
-  const rows = data || [];
-  const newestCreatedAt = rows.length ? rows[rows.length - 1].created_at : since || null;
+        // Send response
+        return res.status(200).json({
+            rows,
+            cursor: { newestCreatedAt },
+            count: rows.length
+        });
 
-  res.setHeader("Cache-Control", "no-store");
-  return res.status(200).json({ rows, cursor: { newestCreatedAt } });
+    } catch (error) {
+        console.error('Server error:', error);
+        return res.status(500).json({ 
+            error: 'Internal server error',
+            rows: [] 
+        });
+    }
 }
