@@ -1,0 +1,102 @@
+// api/refresh-data.js
+export default async function handler(req, res) {
+    if (req.method !== 'POST') {
+        return res.status(405).json({ error: 'Method not allowed' });
+    }
+
+    const JAGMAG_CONNECTOR_URL = process.env.JAGMAG_CONNECTOR_URL;
+    const JAGMAG_ADMIN_SECRET = process.env.JAGMAG_ADMIN_SECRET;
+
+    if (!JAGMAG_CONNECTOR_URL || !JAGMAG_ADMIN_SECRET) {
+        return res.status(500).json({ error: 'Server configuration missing' });
+    }
+
+    try {
+        console.log('Starting AI data refresh...');
+        
+        // PHASE A: Policies (RESET)
+        console.log('Phase A: Refreshing policies...');
+        const phaseA = await fetch(
+            `${JAGMAG_CONNECTOR_URL}/api/connector?admin=update-knowledge&kind=policies&offset=0&limit=50&reset=1`,
+            {
+                headers: { 'Authorization': `Bearer ${JAGMAG_ADMIN_SECRET}` }
+            }
+        );
+        
+        if (!phaseA.ok) throw new Error(`Phase A failed: ${phaseA.status}`);
+        const phaseAResult = await phaseA.json();
+        console.log(`Phase A: ${phaseAResult.items_curated || 0} items curated`);
+
+        // PHASE B: Pages
+        console.log('Phase B: Refreshing pages...');
+        const phaseB = await fetch(
+            `${JAGMAG_CONNECTOR_URL}/api/connector?admin=update-knowledge&kind=pages&offset=0&limit=50`,
+            {
+                headers: { 'Authorization': `Bearer ${JAGMAG_ADMIN_SECRET}` }
+            }
+        );
+        
+        if (!phaseB.ok) throw new Error(`Phase B failed: ${phaseB.status}`);
+        const phaseBResult = await phaseB.json();
+        console.log(`Phase B: ${phaseBResult.items_curated || 0} items curated`);
+
+        // PHASE C: Products (batched loop)
+        console.log('Phase C: Refreshing products...');
+        let offset = 0;
+        const limit = 10;
+        const safetyCap = 2000;
+        let zeroBatches = 0;
+        let totalProducts = 0;
+
+        while (offset < safetyCap && zeroBatches < 3) {
+            const url = `${JAGMAG_CONNECTOR_URL}/api/connector?admin=update-knowledge&kind=products&offset=${offset}&limit=${limit}`;
+            console.log(`Fetching products batch: offset=${offset}, limit=${limit}`);
+            
+            const response = await fetch(url, {
+                headers: { 'Authorization': `Bearer ${JAGMAG_ADMIN_SECRET}` }
+            });
+
+            if (!response.ok) {
+                throw new Error(`Product batch failed at offset ${offset}: ${response.status}`);
+            }
+
+            const result = await response.json();
+            const itemsCurated = result.items_curated || 0;
+            
+            console.log(`Batch ${offset/limit + 1}: ${itemsCurated} items curated`);
+            
+            totalProducts += itemsCurated;
+            
+            if (itemsCurated === 0) {
+                zeroBatches++;
+            } else {
+                zeroBatches = 0;
+            }
+            
+            offset += limit;
+            
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 500));
+        }
+
+        console.log(`Phase C complete: ${totalProducts} total products curated`);
+        console.log(`Refresh completed successfully`);
+
+        res.status(200).json({
+            success: true,
+            message: `Refresh completed: ${phaseAResult.items_curated || 0} policies, ${phaseBResult.items_curated || 0} pages, ${totalProducts} products`,
+            summary: {
+                policies: phaseAResult.items_curated || 0,
+                pages: phaseBResult.items_curated || 0,
+                products: totalProducts
+            }
+        });
+
+    } catch (error) {
+        console.error('Refresh error:', error);
+        res.status(500).json({
+            success: false,
+            error: error.message
+        });
+    }
+}
