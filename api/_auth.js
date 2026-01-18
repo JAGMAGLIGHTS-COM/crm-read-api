@@ -1,14 +1,14 @@
 import crypto from "crypto";
 
-function base64url(input) {
-  return Buffer.from(input)
+function base64url(buf) {
+  return Buffer.from(buf)
     .toString("base64")
     .replace(/=/g, "")
     .replace(/\+/g, "-")
     .replace(/\//g, "_");
 }
 
-function base64urlJson(obj) {
+function jsonB64(obj) {
   return base64url(JSON.stringify(obj));
 }
 
@@ -16,27 +16,28 @@ function signHS256(unsigned, secret) {
   return base64url(crypto.createHmac("sha256", secret).update(unsigned).digest());
 }
 
-export function issueToken({ subject, ttlSeconds }) {
-  const secret = process.env.CRM_JWT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!secret) throw new Error("Missing CRM_JWT_SECRET (or SUPABASE_SERVICE_ROLE_KEY as fallback)");
+export function issueToken({ subject, ttlSeconds = 12 * 60 * 60 }) {
+  const secret = (process.env.CRM_JWT_SECRET || "").trim() || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) throw new Error("Missing CRM_JWT_SECRET (or SUPABASE_SERVICE_ROLE_KEY fallback)");
 
   const now = Math.floor(Date.now() / 1000);
+
   const header = { alg: "HS256", typ: "JWT" };
   const payload = {
     sub: String(subject),
     iat: now,
-    exp: now + (ttlSeconds || 12 * 60 * 60),
+    exp: now + ttlSeconds,
     iss: "jagmag-crm",
   };
 
-  const unsigned = `${base64urlJson(header)}.${base64urlJson(payload)}`;
-  const signature = signHS256(unsigned, secret);
-  return `${unsigned}.${signature}`;
+  const unsigned = `${jsonB64(header)}.${jsonB64(payload)}`;
+  const sig = signHS256(unsigned, secret);
+  return `${unsigned}.${sig}`;
 }
 
 export function verifyToken(token) {
-  const secret = process.env.CRM_JWT_SECRET || process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!secret) throw new Error("Missing CRM_JWT_SECRET (or SUPABASE_SERVICE_ROLE_KEY as fallback)");
+  const secret = (process.env.CRM_JWT_SECRET || "").trim() || process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!secret) return { ok: false, reason: "missing_secret" };
 
   const parts = String(token || "").split(".");
   if (parts.length !== 3) return { ok: false, reason: "bad_format" };
@@ -48,7 +49,8 @@ export function verifyToken(token) {
 
   let payload;
   try {
-    payload = JSON.parse(Buffer.from(p.replace(/-/g, "+").replace(/_/g, "/"), "base64").toString("utf8"));
+    const b64 = p.replace(/-/g, "+").replace(/_/g, "/");
+    payload = JSON.parse(Buffer.from(b64, "base64").toString("utf8"));
   } catch {
     return { ok: false, reason: "bad_payload" };
   }
@@ -60,11 +62,12 @@ export function verifyToken(token) {
 }
 
 export function requireAuth(req, res) {
-  const header = req.headers?.authorization || "";
-  const token = header.startsWith("Bearer ") ? header.slice(7) : "";
+  const authHeader = String(req.headers?.authorization || "");
+  const token = authHeader.startsWith("Bearer ") ? authHeader.slice(7) : "";
 
   const v = verifyToken(token);
   if (!v.ok) {
+    res.setHeader("Cache-Control", "no-store");
     res.status(401).json({ error: "Unauthorized" });
     return null;
   }
