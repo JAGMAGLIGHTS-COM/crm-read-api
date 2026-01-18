@@ -1934,7 +1934,17 @@
 <script>
 /* ====== GLOBAL VARIABLES ====== */
 const API_URL = "/api/conversations";
-const PASSWORD = "2211";
+const LOGIN_URL = "/api/login";
+
+// Auth token stored in sessionStorage (per-tab). Server enforces auth on all API calls.
+let authToken = sessionStorage.getItem('crm_token') || null;
+
+// Live update state
+let lastSeenCreatedAt = null; // ISO timestamp of the newest message we have
+let pollTimer = null;
+let seenMessageKeys = new Set();
+let focusHandler = null;
+let visibilityHandler = null;
 
 let allMessages = [];
 let currentUser = null;
@@ -1968,16 +1978,34 @@ const CHANNEL_COLORS = {
 };
 
 /* ====== PASSWORD & PAGE MANAGEMENT ====== */
-function checkPassword() {
-    const password = document.getElementById("passwordInput").value;
-    if (password === PASSWORD) {
+async function checkPassword() {
+    const passwordEl = document.getElementById("passwordInput");
+    const password = passwordEl.value;
+
+    try {
+        const res = await fetch(LOGIN_URL, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ password })
+        });
+
+        if (!res.ok) throw new Error("Invalid password");
+
+        const json = await res.json();
+        authToken = json.token;
+        sessionStorage.setItem('crm_token', authToken);
+
+        document.getElementById("loginError").style.display = "none";
+        passwordEl.value = "";
+
         showPage("mainPage");
-        loadData();
-        document.getElementById("passwordInput").value = "";
-    } else {
+        await loadDataInitial();
+        startLiveUpdates();
+    } catch (e) {
+        console.error("Login failed:", e);
         document.getElementById("loginError").style.display = "block";
-        document.getElementById("passwordInput").value = "";
-        document.getElementById("passwordInput").focus();
+        passwordEl.value = "";
+        passwordEl.focus();
     }
 }
 
@@ -2003,6 +2031,11 @@ function showPage(pageId) {
 }
 
 function logout() {
+    stopLiveUpdates();
+    authToken = null;
+    lastSeenCreatedAt = null;
+    seenMessageKeys = new Set();
+    sessionStorage.removeItem('crm_token');
     showPage("loginPage");
 }
 
@@ -2333,20 +2366,124 @@ function shareCurrentContact() {
 }
 
 /* ====== DATA FUNCTIONS ====== */
-async function loadData() {
+function authHeaders() {
+    return authToken ? { "Authorization": `Bearer ${authToken}` } : {};
+}
+
+async function authFetch(url) {
+    const res = await fetch(url, {
+        headers: {
+            ...authHeaders(),
+        }
+    });
+
+    // If token expired/invalid, force logout.
+    if (res.status === 401) {
+        showToast("Session expired. Please login again.", "error");
+        logout();
+        throw new Error("Unauthorized");
+    }
+
+    return res;
+}
+
+function messageKey(m) {
+    const t = m.created_at || m.timestamp || "";
+    const u = m.user_id || "";
+    const r = m.role || "";
+    const c = m.channel || "";
+    const msg = (m.message || "").slice(0, 80);
+    return `${t}::${u}::${c}::${r}::${msg}`;
+}
+
+function indexMessages(rows) {
+    rows.forEach(m => seenMessageKeys.add(messageKey(m)));
+}
+
+async function loadDataInitial() {
     try {
-        const res = await fetch(API_URL);
+        // Load a recent window by default (keeps CRM fast as data grows).
+        // Order desc in API, then reverse locally for proper timeline.
+        const res = await authFetch(`${API_URL}?limit=2000&order=desc`);
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-        
-        allMessages = await res.json();
+
+        const json = await res.json();
+        const rows = (json.rows || []).slice().reverse();
+
+        allMessages = rows;
+        indexMessages(allMessages);
+
+        // Track newest timestamp for delta polling.
+        lastSeenCreatedAt = json.cursor?.newestCreatedAt || (allMessages.length ? allMessages[allMessages.length - 1].created_at : null);
+
         loadLocalData();
         renderUsers();
         updateStatsPanel();
-        showToast("Data loaded successfully", "success");
+
+        // If a chat is already open (rare on fresh load), refresh it.
+        if (currentUser) renderMessages();
+
+        showToast("Data loaded", "success");
     } catch (error) {
         console.error("Error loading data:", error);
         showToast("Failed to load conversations", "error");
     }
+}
+
+async function fetchDelta() {
+    if (!lastSeenCreatedAt) return;
+
+    const url = `${API_URL}?since=${encodeURIComponent(lastSeenCreatedAt)}&order=asc&limit=2000`;
+    const res = await authFetch(url);
+    if (!res.ok) return;
+
+    const json = await res.json();
+    const rows = json.rows || [];
+    if (!rows.length) return;
+
+    // Deduplicate and append.
+    const newRows = [];
+    rows.forEach(m => {
+        const k = messageKey(m);
+        if (!seenMessageKeys.has(k)) {
+            seenMessageKeys.add(k);
+            newRows.push(m);
+        }
+    });
+
+    if (!newRows.length) {
+        // Still advance cursor if server reports something newer.
+        lastSeenCreatedAt = json.cursor?.newestCreatedAt || lastSeenCreatedAt;
+        return;
+    }
+
+    allMessages = allMessages.concat(newRows);
+    lastSeenCreatedAt = json.cursor?.newestCreatedAt || newRows[newRows.length - 1].created_at || lastSeenCreatedAt;
+
+    // Re-render surfaces.
+    renderUsers();
+    updateStatsPanel();
+    if (currentUser) renderMessages();
+}
+
+function startLiveUpdates() {
+    stopLiveUpdates();
+
+    // Poll every 10s; refresh immediately on tab focus.
+    pollTimer = setInterval(fetchDelta, 10000);
+    focusHandler = () => fetchDelta();
+    visibilityHandler = () => { if (!document.hidden) fetchDelta(); };
+    window.addEventListener("focus", focusHandler);
+    document.addEventListener("visibilitychange", visibilityHandler);
+}
+
+function stopLiveUpdates() {
+    if (pollTimer) clearInterval(pollTimer);
+    pollTimer = null;
+    if (focusHandler) window.removeEventListener("focus", focusHandler);
+    if (visibilityHandler) document.removeEventListener("visibilitychange", visibilityHandler);
+    focusHandler = null;
+    visibilityHandler = null;
 }
 
 function loadLocalData() {
@@ -3108,6 +3245,12 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     `;
     document.head.appendChild(style);
+
+    // Auto-restore session (per-tab) if token exists.
+    if (authToken) {
+        showPage("mainPage");
+        loadDataInitial().then(() => startLiveUpdates()).catch(() => logout());
+    }
 });
 </script>
 </body>
