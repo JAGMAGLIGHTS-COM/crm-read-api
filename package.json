@@ -1,13 +1,12 @@
 {
-  "name": "crm-read-api",
+  "name": "crm-read-api-main",
   "version": "1.0.0",
-  "type": "module",
   "private": true,
-  "dependencies": {
-    "@supabase/supabase-js": "^2.39.5"
-  },
+  "type": "module",
   "scripts": {
-    "dev": "npx vercel dev",
-    "start": "npx vercel dev"
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.0.0"
   }
 }
