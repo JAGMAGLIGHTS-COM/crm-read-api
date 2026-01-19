@@ -1,5 +1,5 @@
 {
-  "name": "crm-read-api-main",
+  "name": "crm-read-api",
   "version": "1.0.0",
   "private": true,
   "type": "module",
@@ -7,6 +7,6 @@
     "start": "node server.js"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.0.0"
+    "@supabase/supabase-js": "^2.39.7"
   }
 }
