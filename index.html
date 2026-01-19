@@ -2653,10 +2653,23 @@ async function refreshAIData() {
                 'Content-Type': 'application/json',
             }
         });
-        
-        if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-        
-        const result = await response.json();
+
+        // Always parse the body so we can show real causes (e.g. connector 401, missing env, etc.)
+        let result = null;
+        let rawText = '';
+        try {
+            rawText = await response.text();
+            result = rawText ? JSON.parse(rawText) : null;
+        } catch {
+            // ignore JSON parse errors
+        }
+
+        if (!response.ok) {
+            const msg = (result && (result.error || result.message)) ? (result.error || result.message) : `HTTP error! status: ${response.status}`;
+            throw new Error(msg);
+        }
+
+        if (!result) result = {};
         
         if (result.success) {
             btn.classList.remove('running');
@@ -2994,9 +3007,23 @@ async function loadData() {
     try {
         // Load conversations
         const convRes = await fetch(API_URL);
-        if (!convRes.ok) throw new Error(`HTTP error! status: ${convRes.status}`);
-        
-        const convData = await convRes.json();
+
+        // Parse body even on non-200 so we can show the real error instead of only a status code.
+        let convText = '';
+        let convData = null;
+        try {
+            convText = await convRes.text();
+            convData = convText ? JSON.parse(convText) : null;
+        } catch {
+            // ignore JSON parse errors
+        }
+
+        if (!convRes.ok) {
+            const msg = (convData && convData.error) ? convData.error : `HTTP error! status: ${convRes.status}`;
+            throw new Error(msg);
+        }
+
+        if (!convData) convData = {};
         allMessages = convData.rows || convData || [];
         
         // Load enhanced dashboard data
@@ -3009,8 +3036,11 @@ async function loadData() {
         showToast("Data loaded successfully", "success");
     } catch (error) {
         console.error("Error loading data:", error);
-        showToast("Failed to load conversations", "error");
-        await loadSampleData();
+        // Do not silently fall back to sample data; surface the real error.
+        showToast(`Failed to load conversations: ${error.message}`, "error");
+        allMessages = [];
+        allCustomers = [];
+        renderUsers();
     }
 }
 
