@@ -11,33 +11,44 @@ export default async function handler(req, res) {
         return res.status(500).json({ error: 'Server configuration missing' });
     }
 
+    // Helper: fetch and return JSON, but on failure include status + response body
+    // so the CRM UI can display the real cause (401/403 from connector, etc.).
+    async function fetchJsonOrThrow(url, phaseLabel) {
+        const r = await fetch(url, {
+            headers: { 'Authorization': `Bearer ${JAGMAG_ADMIN_SECRET}` }
+        });
+
+        if (!r.ok) {
+            let body = '';
+            try { body = await r.text(); } catch {}
+            const msg = `${phaseLabel} failed: HTTP ${r.status}${body ? ` | ${body.slice(0, 800)}` : ''}`;
+            const err = new Error(msg);
+            err.status = r.status;
+            err.phase = phaseLabel;
+            throw err;
+        }
+
+        // Some upstream errors still return 200 with {success:false}; handle that at the callsite.
+        return await r.json();
+    }
+
     try {
         console.log('Starting AI data refresh...');
         
         // PHASE A: Policies (RESET)
         console.log('Phase A: Refreshing policies...');
-        const phaseA = await fetch(
+        const phaseAResult = await fetchJsonOrThrow(
             `${JAGMAG_CONNECTOR_URL}/api/connector?admin=update-knowledge&kind=policies&offset=0&limit=50&reset=1`,
-            {
-                headers: { 'Authorization': `Bearer ${JAGMAG_ADMIN_SECRET}` }
-            }
+            'Phase A (policies)'
         );
-        
-        if (!phaseA.ok) throw new Error(`Phase A failed: ${phaseA.status}`);
-        const phaseAResult = await phaseA.json();
         console.log(`Phase A: ${phaseAResult.items_curated || 0} items curated`);
 
         // PHASE B: Pages
         console.log('Phase B: Refreshing pages...');
-        const phaseB = await fetch(
+        const phaseBResult = await fetchJsonOrThrow(
             `${JAGMAG_CONNECTOR_URL}/api/connector?admin=update-knowledge&kind=pages&offset=0&limit=50`,
-            {
-                headers: { 'Authorization': `Bearer ${JAGMAG_ADMIN_SECRET}` }
-            }
+            'Phase B (pages)'
         );
-        
-        if (!phaseB.ok) throw new Error(`Phase B failed: ${phaseB.status}`);
-        const phaseBResult = await phaseB.json();
         console.log(`Phase B: ${phaseBResult.items_curated || 0} items curated`);
 
         // PHASE C: Products (batched loop)
@@ -52,15 +63,7 @@ export default async function handler(req, res) {
             const url = `${JAGMAG_CONNECTOR_URL}/api/connector?admin=update-knowledge&kind=products&offset=${offset}&limit=${limit}`;
             console.log(`Fetching products batch: offset=${offset}, limit=${limit}`);
             
-            const response = await fetch(url, {
-                headers: { 'Authorization': `Bearer ${JAGMAG_ADMIN_SECRET}` }
-            });
-
-            if (!response.ok) {
-                throw new Error(`Product batch failed at offset ${offset}: ${response.status}`);
-            }
-
-            const result = await response.json();
+            const result = await fetchJsonOrThrow(url, `Phase C (products) batch offset=${offset}`);
             const itemsCurated = result.items_curated || 0;
             
             console.log(`Batch ${offset/limit + 1}: ${itemsCurated} items curated`);
@@ -93,7 +96,9 @@ export default async function handler(req, res) {
         console.error('Refresh error:', error);
         res.status(500).json({
             success: false,
-            error: error.message
+            error: error.message,
+            phase: error.phase || null,
+            status: error.status || null
         });
     }
 }
