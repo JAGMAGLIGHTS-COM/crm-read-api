@@ -26,7 +26,8 @@ export default async function handler(req, res) {
         const supabase = createClient(supabaseUrl, supabaseKey);
 
         // Parse query parameters
-        const url = new URL(req.url, `http://${req.headers.host}`);
+        const host = req.headers?.host || 'localhost';
+        const url = new URL(req.url, `http://${host}`);
         const since = url.searchParams.get('since');
         const limit = parseInt(url.searchParams.get('limit') || '1000');
         const userId = url.searchParams.get('user_id');
