@@ -15,48 +15,48 @@ export default async function handler(req, res) {
     });
   }
 
-  // Free plan safe defaults
-  const PRODUCT_LIMIT = 2;       // Use 1–3 on Free plan; start at 2
-  const PRODUCT_DELAY_MS = 350;  // 300–500ms is typically safe
+  // Vercel Free-plan safe defaults
+  const PRODUCT_LIMIT = 2;      // Use 1–3; start with 2
+  const DELAY_MS = 350;         // 300–500ms helps stability on Free plan
   const SAFETY_CAP_OFFSET = 2000;
   const ZERO_STREAK_STOP = 3;
 
-  const headers = {
-    Authorization: `Bearer ${ADMIN_SECRET}`,
-  };
-
+  const headers = { Authorization: `Bearer ${ADMIN_SECRET}` };
   const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
   async function callConnector(phaseLabel, url) {
-    let upstreamText = "";
-    let upstreamJson = null;
-
     const resp = await fetch(url, { method: "GET", headers });
 
-    // Read body safely (helps debugging even when non-JSON)
+    let raw = "";
+    let parsed = null;
+
     try {
-      upstreamText = await resp.text();
+      raw = await resp.text();
       try {
-        upstreamJson = upstreamText ? JSON.parse(upstreamText) : null;
+        parsed = raw ? JSON.parse(raw) : null;
       } catch {
-        upstreamJson = null;
+        parsed = null;
       }
     } catch {
-      upstreamText = "";
-      upstreamJson = null;
+      raw = "";
+      parsed = null;
     }
 
     if (!resp.ok) {
-      const msg =
-        (upstreamJson && (upstreamJson.error || upstreamJson.message)) ||
-        upstreamText ||
+      const upstreamMsg =
+        (parsed && (parsed.error || parsed.message)) ||
+        raw ||
         `HTTP ${resp.status}`;
 
-      const error = `Phase ${phaseLabel} failed: HTTP ${resp.status} | ${msg}`;
-      return { ok: false, status: resp.status, error, body: upstreamJson || upstreamText };
+      return {
+        ok: false,
+        status: resp.status,
+        error: `Phase ${phaseLabel} failed: HTTP ${resp.status} | ${upstreamMsg}`,
+        upstream: parsed || raw,
+      };
     }
 
-    return { ok: true, status: resp.status, body: upstreamJson || upstreamText };
+    return { ok: true, status: resp.status, body: parsed || raw };
   }
 
   try {
@@ -74,7 +74,7 @@ export default async function handler(req, res) {
         phase: "Phase A (policies reset)",
         status: rA.status,
         error: rA.error,
-        upstream: rA.body,
+        upstream: rA.upstream,
       });
     }
 
@@ -94,7 +94,7 @@ export default async function handler(req, res) {
         phase: "Phase B (pages)",
         status: rB.status,
         error: rB.error,
-        upstream: rB.body,
+        upstream: rB.upstream,
       });
     }
 
@@ -122,7 +122,7 @@ export default async function handler(req, res) {
           phase: `Phase C (products) batch offset=${offset}`,
           status: rC.status,
           error: rC.error,
-          upstream: rC.body,
+          upstream: rC.upstream,
         });
       }
 
@@ -130,18 +130,13 @@ export default async function handler(req, res) {
       totalProductsCurated += curatedNow;
       batches += 1;
 
-      if (curatedNow === 0) {
-        zeroStreak += 1;
-      } else {
-        zeroStreak = 0;
-      }
+      if (curatedNow === 0) zeroStreak += 1;
+      else zeroStreak = 0;
 
       if (zeroStreak >= ZERO_STREAK_STOP) break;
 
       offset += PRODUCT_LIMIT;
-
-      // Free plan stability: small pause to avoid burst + reduce timeout risk
-      await sleep(PRODUCT_DELAY_MS);
+      await sleep(DELAY_MS);
     }
 
     return res.status(200).json({
